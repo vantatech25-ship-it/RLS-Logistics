@@ -38,7 +38,7 @@ async def serve_dashboard():
 
 # ─── /api/kpis — top-level summary metrics ───────────────────────────────────
 @app.get("/api/kpis")
-async def get_kpis(request: None = None):
+async def get_kpis():
     """One-stop endpoint: hub count, avg congestion, route stats."""
     pool = app.state.db
 
@@ -72,13 +72,13 @@ async def get_kpis(request: None = None):
 
     return {
         "hub_count":       hub_stats["total_hubs"] or 0,
-        "avg_congestion":  round(float(hub_stats["avg_congestion"] or 0), 3),
-        "avg_load":        round(float(hub_stats["avg_load"] or 0), 3),
+        "avg_congestion":  round(float(hub_stats["avg_congestion"] or 0.0), 3),
+        "avg_load":        round(float(hub_stats["avg_load"] or 0.0), 3),
         "recent_readings": hub_stats["recent_readings"] or 0,
         "routes_24h":      route_stats["total_routes"] or 0,
         "routes_completed":route_stats["completed_routes"] or 0,
-        "avg_cost_delta":  round(float(route_stats["avg_cost_delta"] or 0), 2),
-        "avg_confidence":  round(float(route_stats["avg_confidence"] or 0), 1),
+        "avg_cost_delta":  round(float(route_stats["avg_cost_delta"] or 0.0), 2),
+        "avg_confidence":  round(float(route_stats["avg_confidence"] or 0.0), 1),
         "live_vehicles":   fleet or 0,
     }
 
@@ -110,7 +110,7 @@ async def congestion_trend(hub_id: str = "JHB"):
         GROUP BY bucket
         ORDER BY bucket ASC
     """, hub_id)
-    return [{"time": str(r["bucket"]), "congestion": round(float(r["avg_cong"]),3), "load": round(float(r["avg_load"]),3)} for r in rows]
+    return [{"time": str(r["bucket"]), "congestion": round(float(r["avg_cong"] or 0.0), 3), "load": round(float(r["avg_load"] or 0.0), 3)} for r in rows]
 
 
 # ─── /api/routes/recent — last 20 dispatched routes ─────────────────────────

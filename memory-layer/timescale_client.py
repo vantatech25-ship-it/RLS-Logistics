@@ -7,7 +7,7 @@ Records and queries live telemetry: GPS pings, hub load, traffic conditions.
 import asyncpg
 import asyncio
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from config import TIMESCALE_DSN
 
 
@@ -95,7 +95,7 @@ async def record_hub_telemetry(telemetry: Dict[str, Any]) -> None:
         await conn.close()
 
 
-async def get_hub_trend(hub_id: str, hours: int = 6) -> List[Dict]:
+async def get_hub_trend(hub_id: str, hours: int = 6) -> List[Dict[str, Any]]:
     """
     Fetch the last N hours of telemetry for a hub.
     Used by LangGraph to detect worsening congestion trends.
@@ -109,6 +109,8 @@ async def get_hub_trend(hub_id: str, hours: int = 6) -> List[Dict]:
               AND time > NOW() - INTERVAL '1 hour' * $2
             ORDER BY time DESC
         """, hub_id, hours)
+        if not rows:
+            return []
         return [dict(r) for r in rows]
     finally:
         await conn.close()
@@ -139,7 +141,7 @@ async def record_vehicle_ping(ping: Dict[str, Any]) -> None:
         await conn.close()
 
 
-async def get_live_fleet_positions() -> List[Dict]:
+async def get_live_fleet_positions() -> List[Dict[str, Any]]:
     """
     Returns latest GPS ping per vehicle — used by Digital Twin to render live vehicle positions.
     """
@@ -151,6 +153,8 @@ async def get_live_fleet_positions() -> List[Dict]:
             FROM vehicle_pings
             ORDER BY vehicle_id, time DESC
         """)
+        if not rows:
+            return []
         return [dict(r) for r in rows]
     finally:
         await conn.close()

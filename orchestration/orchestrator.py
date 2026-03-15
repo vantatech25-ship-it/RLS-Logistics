@@ -75,7 +75,8 @@ async def fetch_hubs(state: AgentState) -> AgentState:
 async def store_memory(state: AgentState) -> AgentState:
     print("[LangGraph] Node: store_memory")
     tasks = []
-    for hub in state.get("hub_features", []):
+    hub_features = state.get("hub_features", [])
+    for hub in hub_features:
         tasks.append(asyncio.create_task(_store_single_hub(hub)))
     await asyncio.gather(*tasks)
     return state
@@ -101,9 +102,10 @@ async def request_route(state: AgentState) -> AgentState:
             timeout=10.0,
         )
 
-    if resp.status_code == 200 and resp.json().get("success"):
-        state["route_recommendation"] = resp.json()["data"]
-        print(f"[LangGraph] Route confidence: {state['route_recommendation']['confidence']}%")
+    recommendation = resp.json().get("data")
+    if resp.status_code == 200 and recommendation:
+        state["route_recommendation"] = recommendation
+        print(f"[LangGraph] Route confidence: {recommendation.get('confidence')}%")
     else:
         # Fallback: try to find similar hub via Pinecone and reroute
         print("[LangGraph] Primary route failed — querying Pinecone for alternative hub")
@@ -125,8 +127,8 @@ async def log_route(state: AgentState) -> AgentState:
             "route_id": state["route_id"],
             "from_hub_id": state["from_hub_id"],
             "to_hub_id": state["to_hub_id"],
-            "predicted_cost": rec.get("adjusted_cost"),
-            "gnn_confidence": rec.get("confidence"),
+            "predicted_cost": rec.get("adjusted_cost", 0.0),
+            "gnn_confidence": rec.get("confidence", 0),
         })
     return state
 
