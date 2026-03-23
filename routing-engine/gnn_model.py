@@ -107,7 +107,7 @@ def predict_congestion(model: nn.Module, data: Data) -> list[float]:
 
 def save_model(model: nn.Module, path: str = "gnn_weights.pt") -> None:
     torch.save(model.state_dict(), path)
-    print(f"[GNN] Model saved → {path}")
+    print(f"[GNN] Model saved -> {path}")
 
 
 def load_model(path: str = "gnn_weights.pt", **kwargs) -> LogisticsGNN:

@@ -13,13 +13,12 @@
 ┌──────────────────────────▼──────────────────────────────────────┐
 │              routing-engine (:3000) — Rust + Axum               │
 │          Petgraph Dijkstra  •  GNN Congestion Scorer            │
-└────────────┬──────────────────────────────────────┬─────────────┘
-             │ HTTP                                  │ Hub features
-┌────────────▼────────────┐           ┌─────────────▼─────────────┐
-│  orchestration (Python) │           │   memory-layer (Python)   │
-│  LangGraph StateGraph   │◄──────────►  Pinecone  +  TimescaleDB │
-│  4-node pipeline        │           │  vectors  +  hypertables  │
-└────────────┬────────────┘           └───────────────────────────┘
+└────────────┬─────────────────────┬──────────────────┬─────────────┘
+             │ HTTP                │ HTTP             │ Hub features
+┌────────────▼──────────┐ ┌────────▼─────────┐ ┌──────▼───────────┐
+│ orchestration (Python)│ │ gnn-sidecar      │ │ memory-layer      │
+│ LangGraph StateGraph  │ │ PyTorch Geometric│ │ Pinecone/DB       │
+└────────────┬──────────┘ └──────────────────┘ └───────────────────┘
              │
 ┌────────────▼────────────┐
 │  dashboard (:8000/8080) │
@@ -48,10 +47,11 @@ docker compose up --build
 
 | Service         | Port | Tech                         |
 |-----------------|------|------------------------------|
-| routing-engine  | 3000 | Rust, Axum, petgraph (GNN)   |
+| routing-engine  | 3000 | Rust, Axum, petgraph         |
+| gnn-sidecar     | 8000 | Python, FastAPI, PyTorch Geom|
 | digital-twin    | 8080 | Three.js, Nginx              |
 | orchestration   | —    | Python, LangGraph            |
-| dashboard       | 8000 | FastAPI, Chart.js            |
+| dashboard       | 8001 | FastAPI, Chart.js            |
 | timescaledb     | 5432 | PostgreSQL + TimescaleDB     |
 
 ## GNN Training
@@ -59,7 +59,8 @@ docker compose up --build
 ```powershell
 cd routing-engine
 pip install -r gnn_requirements.txt
-python gnn_model.py   # trains GraphSAGE, saves gnn_weights.pt
+python gnn_model.py     # trains GraphSAGE, saves gnn_weights.pt
+python gnn_service.py   # starts FastAPI sidecar on :8000
 ```
 
 ## Cloud Deploy

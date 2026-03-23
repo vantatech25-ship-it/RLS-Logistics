@@ -54,7 +54,7 @@ async fn health() -> impl IntoResponse {
 /// GET /hubs — list all hubs and their GNN congestion scores
 async fn list_hubs(State(network): State<SharedNetwork>) -> impl IntoResponse {
     let net = network.read().unwrap();
-    let scores = GnnRouter::score_hubs(&net);
+    let scores = GnnRouter::score_hubs(&net).await;
     ApiResponse::ok(scores)
 }
 
@@ -66,7 +66,7 @@ async fn get_route(
 ) -> impl IntoResponse {
     info!("Route request: {} → {}", req.from_hub_id, req.to_hub_id);
     let net = network.read().unwrap();
-    match GnnRouter::recommend_route(&net, &req.from_hub_id, &req.to_hub_id) {
+    match GnnRouter::recommend_route(&net, &req.from_hub_id, &req.to_hub_id).await {
         Some(rec) => (StatusCode::OK, ApiResponse::ok(rec)).into_response(),
         None => (
             StatusCode::NOT_FOUND,

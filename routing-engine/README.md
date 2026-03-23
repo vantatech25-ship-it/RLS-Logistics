@@ -12,8 +12,12 @@ A high-performance, async routing micro-service that combines **Dijkstra graph p
 src/
 ├── main.rs          # Tokio entry point, seeds the network, starts Axum server
 ├── graph/mod.rs     # Hub & RouteEdge models, live network graph (petgraph)
-├── gnn/mod.rs       # GNN-style hub feature extraction & route scoring
-└── api/mod.rs       # REST API handlers (Axum + Tower)
+├── gnn/mod.rs       # Async client for GNN sidecar + heuristic fallback
+├── api/mod.rs       # REST API handlers (Axum + Tower)
+└── ...
+
+gnn_service.py       # FastAPI sidecar serving the PyTorch GNN model
+gnn_model.py         # PyTorch Geometric model definition and training
 ```
 
 ## API Endpoints
@@ -74,9 +78,9 @@ cargo test
 
 ## GNN Roadmap
 
-- **Phase 1 (current)**: Heuristic congestion scoring using hub load and connectivity features.
-- **Phase 2**: Replace heuristic with `tch-rs` (PyTorch) trained GNN model. Uncomment `tch` dependency in `Cargo.toml`.
-- **Phase 3**: Feed live telemetry from TimescaleDB into the GNN for real-time embeddings.
+- [x] **Phase 1**: Heuristic congestion scoring using hub load and connectivity features.
+- [x] **Phase 2**: Replace heuristic with dedicated **GNN Sidecar** (FastAPI + PyTorch).
+- [ ] **Phase 3**: Feed live telemetry from TimescaleDB into the GNN for real-time embeddings.
 
 ## Integration Points
 

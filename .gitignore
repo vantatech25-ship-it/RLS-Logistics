@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Rust
+target/
+
+# IDEs
+.vscode/
+
+# Model Weights
+*.pt
+!gnn_weights.pt  # keep this small weight file for instant demo
