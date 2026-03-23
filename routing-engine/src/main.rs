@@ -18,7 +18,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    tracing::info!("🧠 RTL Logistics — Living Neural Network Routing Engine v0.1.0");
+    tracing::info!("🧠 RLS Logistics — Living Neural Network Routing Engine v0.1.0");
 
     // Build live logistics graph and seed demo hubs
     let mut network = LogisticsNetwork::new();

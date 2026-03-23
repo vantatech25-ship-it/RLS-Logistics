@@ -1,5 +1,5 @@
 """
-main.py — RTL Logistics KPI Dashboard
+main.py — RLS Logistics KPI Dashboard
 FastAPI backend serving real-time metrics from TimescaleDB + Routing Engine.
 Pairs with the frontend dashboard.html for a full KPI view.
 """
@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
 
-TIMESCALE_DSN      = os.getenv("TIMESCALE_DSN", "postgresql://rtt_user:rtt_pass@localhost:5432/rtt_logistics")
+TIMESCALE_DSN      = os.getenv("TIMESCALE_DSN", "postgresql://rls_user:rls_pass@localhost:5432/rls_logistics")
 ROUTING_ENGINE_URL = os.getenv("ROUTING_ENGINE_URL", "http://localhost:3000")
 
 
@@ -26,7 +26,7 @@ async def lifespan(app: FastAPI):
     await app.state.db.close()
 
 
-app = FastAPI(title="RTL Logistics KPI Dashboard", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="RLS Logistics KPI Dashboard", version="1.0.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 

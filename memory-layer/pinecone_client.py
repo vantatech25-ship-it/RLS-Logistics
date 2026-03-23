@@ -1,6 +1,6 @@
 """
 pinecone_client.py
-Pinecone vector memory client for RTL Logistics.
+Pinecone vector memory client for RLS Logistics.
 Stores hub GNN feature embeddings for fast spatial similarity search.
 LangGraph uses this to answer: "Which hub is most similar to current conditions?"
 """

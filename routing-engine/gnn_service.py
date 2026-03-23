@@ -4,7 +4,7 @@ import torch
 from gnn_model import LogisticsGNN, hubs_to_pyg_graph, predict_congestion, load_model
 import os
 
-app = FastAPI(title="RTL Logistics GNN Sidecar")
+app = FastAPI(title="RLS Logistics GNN Sidecar")
 
 # Model configuration
 MODEL_PATH = "gnn_weights.pt"

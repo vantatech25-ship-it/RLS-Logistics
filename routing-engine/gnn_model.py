@@ -1,6 +1,6 @@
 """
 gnn_model.py
-PyTorch Geometric Graph Neural Network for RTL Logistics route scoring.
+PyTorch Geometric Graph Neural Network for RLS Logistics route scoring.
 Trains a GraphSAGE model on hub features to predict congestion scores.
 
 Architecture:
@@ -118,7 +118,7 @@ def load_model(path: str = "gnn_weights.pt", **kwargs) -> LogisticsGNN:
 
 
 # ─────────────────────────────────────────────────────────────────
-# 5. Demo training on synthetic RTL graph
+# 5. Demo training on synthetic RLS graph
 # ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

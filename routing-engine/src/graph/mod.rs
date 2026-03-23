@@ -89,7 +89,7 @@ impl LogisticsNetwork {
         })
     }
 
-    /// Seeds the network with a sample RTL logistics graph for demo/testing.
+    /// Seeds the network with a sample RLS logistics graph for demo/testing.
     pub fn seed_demo_network(&mut self) {
         let hubs = vec![
             Hub { id: "JHB".into(), name: "Johannesburg Hub".into(), latitude: -26.2041, longitude: 28.0473, load_factor: 0.75, active: true },

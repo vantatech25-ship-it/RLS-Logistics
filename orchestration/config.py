@@ -1,5 +1,5 @@
 """
-RTL Logistics — LangGraph Orchestrator
+RLS Logistics — LangGraph Orchestrator
 Coordinates: Rust Routing Engine → Pinecone Memory → TimescaleDB → Digital Twin
 """
 

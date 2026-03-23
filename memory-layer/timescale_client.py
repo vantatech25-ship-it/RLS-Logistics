@@ -1,6 +1,6 @@
 """
 timescale_client.py
-TimescaleDB time-series client for RTL Logistics.
+TimescaleDB time-series client for RLS Logistics.
 Records and queries live telemetry: GPS pings, hub load, traffic conditions.
 """
 

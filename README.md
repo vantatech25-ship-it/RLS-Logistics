@@ -1,4 +1,4 @@
-# RTL Logistics — Living Neural Network
+# RLS Logistics — Living Neural Network
 
 > A full-stack intelligent logistics platform powered by GNN routing, vector memory, time-series telemetry, LangGraph orchestration, and a real-time 3D Digital Twin.
 

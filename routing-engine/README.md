@@ -1,6 +1,6 @@
 # Routing Engine
 
-**RTL Logistics — Living Neural Network | Rust GNN Routing Service**
+**RLS Logistics — Living Neural Network | Rust GNN Routing Service**
 
 A high-performance, async routing micro-service that combines **Dijkstra graph pathfinding** with **Graph Neural Network (GNN) congestion scoring** to produce optimal logistics routes in real-time.
 
