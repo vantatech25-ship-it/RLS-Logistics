@@ -12,11 +12,29 @@ services:
       - "3000:3000"
     environment:
       RUST_LOG: routing_engine=info
+      GNN_SIDECAR_URL: http://gnn-sidecar:8000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 15s
       timeout: 5s
       retries: 3
+    restart: unless-stopped
+    networks:
+      - rls-net
+
+  # ─── GNN AI Sidecar (GraphSAGE Model) ─────────────────────────────────────
+  gnn-sidecar:
+    build:
+      context: ./routing-engine
+      dockerfile: Dockerfile.gnn
+    container_name: rls_gnn_sidecar
+    ports:
+      - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
     restart: unless-stopped
     networks:
       - rls-net

@@ -1,0 +1,19 @@
+FROM python:3.11-slim-bookworm
+
+WORKDIR /app
+
+# Install system dependencies for torch-geometric if needed
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY gnn_requirements.txt .
+RUN pip install --no-cache-dir -r gnn_requirements.txt
+
+COPY gnn_model.py gnn_service.py ./
+# Copy weights if they exist (optional, can be trained inside/outside)
+COPY gnn_weights.pt* ./
+
+EXPOSE 8000
+
+CMD ["uvicorn", "gnn_service:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -68,8 +68,12 @@ impl GnnRouter {
                 vec![ia, ib]
             }).collect();
 
+        let sidecar_url = std::env::var("GNN_SIDECAR_URL")
+            .unwrap_or_else(|_| "http://localhost:8000".into());
+        let predict_url = format!("{}/predict", sidecar_url);
+
         let client = reqwest::Client::new();
-        let res = client.post("http://localhost:8000/predict")
+        let res = client.post(&predict_url)
             .json(&GnnPredictRequest { hub_features: hub_json, edges })
             .send()
             .await;
