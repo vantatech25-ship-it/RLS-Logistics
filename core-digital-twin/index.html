@@ -6,6 +6,7 @@
   <title>RLS Logistics — Living Neural Network Digital Twin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+  <script async src="assets/es-module-shims.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -290,7 +291,7 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+    "three": "./assets/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
   }
 }
@@ -535,8 +536,9 @@ window.dispatchRoute = async function() {
   addLog(`⟳ Dispatching GNN route: ${from} → ${to}`);
 
   let data;
+  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : `http://${window.location.hostname}:3000`;
   try {
-    const resp = await fetch('http://localhost:3000/route', {
+    const resp = await fetch(`${API_BASE}/route`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ from_hub_id: from, to_hub_id: to }),

@@ -12,8 +12,16 @@ services:
       sleepApplication: false
     variables:
       RUST_LOG: routing_engine=info
+      GNN_SIDECAR_URL: ${{ gnn-sidecar.RAILWAY_PRIVATE_URL }}
     ports:
       - target: 3000
+
+  gnn-sidecar:
+    source: ./routing-engine
+    build:
+      dockerfile: Dockerfile.gnn
+    ports:
+      - target: 8000
 
   orchestration:
     source: ./orchestration
@@ -22,6 +30,7 @@ services:
     variables:
       ROUTING_ENGINE_URL: ${{ routing-engine.RAILWAY_PRIVATE_URL }}
       TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
+      PINECONE_INDEX: rls-logistics-hubs
       PINECONE_API_KEY: ${{ PINECONE_API_KEY }}
     startCommand: python orchestrator.py
 
@@ -37,7 +46,7 @@ services:
 
   digital-twin:
     source: ./core-digital-twin
-    build:
-      dockerfile: Dockerfile
+    variables:
+      ROUTING_ENGINE_URL: https://${{ routing-engine.RAILWAY_PUBLIC_DOMAIN }}
     ports:
       - target: 80
