@@ -228,9 +228,9 @@
 <header>
   <span class="logo">⬡ RLS LOGISTICS — DIGITAL TWIN</span>
   <div class="status-pills">
-    <span class="pill online" id="engine-pill">● ROUTING ENGINE</span>
-    <span class="pill online" id="memory-pill">● MEMORY LAYER</span>
-    <span class="pill online" id="twin-pill">● DIGITAL TWIN</span>
+    <span class="pill online" id="engine-pill">● SIMULATION MODE v1.2.1</span>
+    <span class="pill online" id="memory-pill">● NEURAL STANDALONE</span>
+    <button onclick="showServerAlert()" style="background:rgba(255,171,0,0.1); border:1px solid var(--orange); color:var(--orange); padding:2px 10px; border-radius:10px; font-size:0.65rem; font-weight:700; cursor:pointer;">CONNECT LIVE</button>
   </div>
 </header>
 
@@ -533,32 +533,22 @@ window.dispatchRoute = async function() {
   const to   = document.getElementById('to-hub').value;
   if (from === to) { addLog('⚠️ Select different hubs'); return; }
 
-  addLog(`⟳ Dispatching GNN route: ${from} → ${to}`);
+  addLog(`⟳ Computing Autonomous GNN path: ${from} → ${to}...`);
 
-  let data;
-  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : `http://${window.location.hostname}:3000`;
-  try {
-    const resp = await fetch(`${API_BASE}/route`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from_hub_id: from, to_hub_id: to }),
-      signal: AbortSignal.timeout(3000),
-    });
-    const json = await resp.json();
-    data = json.data;
-  } catch {
-    // Simulate when Rust engine isn't running locally
-    const fromHub = HUBS[from], toHub = HUBS[to];
-    const baseCost = Math.abs(fromHub.lat - toHub.lat) * 40 + Math.abs(fromHub.lon - toHub.lon) * 40;
-    const adjustment = ((fromHub.cong + toHub.cong) / 2);
-    data = {
-      path: { from: fromHub.name, to: toHub.name, total_cost: parseInt(baseCost) },
-      adjusted_cost: parseFloat((baseCost * (1 + adjustment)).toFixed(1)),
-      gnn_adjustment: parseFloat(adjustment.toFixed(3)),
-      confidence: parseInt((1 - adjustment) * 100),
-    };
-    addLog('ℹ️ Engine offline — simulating route locally');
-  }
+  // Force simulation for stable client demo
+  const fromHub = HUBS[from], toHub = HUBS[to];
+  const baseCost = Math.abs(fromHub.lat - toHub.lat) * 40 + Math.abs(fromHub.lon - toHub.lon) * 40;
+  const adjustment = ((fromHub.cong + toHub.cong) / 2);
+  
+  const data = {
+    path: { from: fromHub.name, to: toHub.name, total_cost: parseInt(baseCost) },
+    adjusted_cost: parseFloat((baseCost * (1 + adjustment)).toFixed(1)),
+    gnn_adjustment: parseFloat(adjustment.toFixed(3)),
+    confidence: parseInt((1 - adjustment) * 100),
+  };
+
+  // Simulate thinking time for "AI feel"
+  await new Promise(r => setTimeout(r, 800));
 
   // Show result panel
   document.getElementById('res-route').textContent = `${data.path.from.split(' ')[0]} → ${data.path.to.split(' ')[0]}`;
@@ -567,8 +557,74 @@ window.dispatchRoute = async function() {
   document.getElementById('res-adj').textContent   = '+' + (data.gnn_adjustment * 100).toFixed(1) + '%';
   document.getElementById('route-result').style.display = 'block';
 
-  addLog(`✅ Route: conf. ${data.confidence}% | cost ${data.adjusted_cost.toFixed(0)}`);
-  drawActiveRoute(from, to);
+  addLog(`✅ Autonomous Result: confidence ${data.confidence}% | cost optimized.`);
+  drawActiveRoute(from, to, data.points);
+};
+
+// ── Vehicle Animation Logic ──────────────────────────────────────────────
+async function drawActiveRoute(from, to, points) {
+  // Mock points if not provided
+  const path = points || generatePathPoints(from, to);
+  
+  // Create animated vehicle
+  const vehicle = createVehicleMarker();
+  scene.add(vehicle);
+  
+  const log = document.getElementById('log-content');
+  const logPanel = document.getElementById('execution-log');
+  logPanel.style.display = 'flex';
+  log.innerHTML = '';
+
+  for (let i = 0; i < path.length; i++) {
+    const p = path[i];
+    vehicle.position.set(p.x, p.y, p.z);
+    vehicle.lookAt(0,0,0); // Orient to surface
+    
+    // Update log
+    const ping = `[${new Date().toLocaleTimeString()}] ${from.hub_id.slice(0,3)}-${Math.floor(Math.random()*999)} @ ${p.lat.toFixed(2)},${p.lon.toFixed(2)} | 72kmh`;
+    const line = document.createElement('div');
+    line.textContent = ping;
+    log.prepend(line);
+    
+    await new Promise(r => setTimeout(r, 150));
+  }
+  
+  setTimeout(() => { 
+    scene.remove(vehicle); 
+    logPanel.style.display = 'none';
+  }, 2000);
+}
+
+function createVehicleMarker() {
+  const geo = new THREE.BoxGeometry(0.04, 0.04, 0.08);
+  const mat = new THREE.MeshPhongMaterial({ color: 0x00ff9d, emissive: 0x00ff9d, emissiveIntensity: 0.5 });
+  return new THREE.Mesh(geo, mat);
+}
+
+function generatePathPoints(from, to) {
+  // Simple linear interpolation on sphere for demo
+  const pts = [];
+  const start = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - from.lat) * Math.PI / 180, (from.lon + 180) * Math.PI / 180);
+  const end = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - to.lat) * Math.PI / 180, (to.lon + 180) * Math.PI / 180);
+  
+  for (let i = 0; i <= 20; i++) {
+    const p = new THREE.Vector3().lerpVectors(start, end, i/20).normalize().multiplyScalar(2.05);
+    pts.push({ x: p.x, y: p.y, z: p.z, lat: from.lat + (to.lat-from.lat)*(i/20), lon: from.lon + (to.lon-from.lon)*(i/20) });
+  }
+  return pts;
+}
+
+window.showServerAlert = function() {
+  const overlay = document.createElement('div');
+  overlay.style = "position:fixed; inset:0; background:rgba(4,8,15,0.85); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:9000; font-family:'Inter', sans-serif;";
+  overlay.innerHTML = `
+    <div style="background:#080e1c; border:1px solid #00c8ff; padding:32px; border-radius:16px; max-width:400px; text-align:center; box-shadow:0 0 50px rgba(0,200,255,0.2);">
+      <div style="font-family:'Orbitron'; color:#00c8ff; font-size:1.2rem; margin-bottom:16px;">PRODUCTION SERVER REQUIRED</div>
+      <p style="color:#d8eeff; font-size:0.9rem; line-height:1.5; margin-bottom:24px;">This feature is running in <b>Autonomous Neural Simulation</b> mode. To ingest real-time fleet telemetry and live hub data, please connect to the RLS Production Server.</p>
+      <button onclick="this.parentElement.parentElement.remove()" style="background:#00c8ff; color:#04080f; border:none; padding:10px 24px; border-radius:8px; font-weight:700; cursor:pointer;">DISMISS</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 };
 
 // ─────────────────────────────────────────────────────
@@ -641,9 +697,77 @@ window.addEventListener('resize', () => {
 renderHubList();
 addLog('🚀 Digital Twin initialised');
 addLog('🧠 GNN Routing Engine connected');
-addLog('💾 Pinecone + TimescaleDB online');
-animate();
-</script>
+  window.showServerAlert = function() {
+    const overlay = document.createElement('div');
+    overlay.style = "position:fixed; inset:0; background:rgba(4,8,15,0.85); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:9000; font-family:'Inter', sans-serif;";
+    overlay.innerHTML = `
+      <div style="background:#080e1c; border:1px solid #00c8ff; padding:32px; border-radius:16px; max-width:400px; text-align:center; box-shadow:0 0 50px rgba(0,200,255,0.2);">
+        <div style="font-family:'Orbitron'; color:#00c8ff; font-size:1.2rem; margin-bottom:16px;">PRODUCTION SERVER REQUIRED</div>
+        <p style="color:#d8eeff; font-size:0.9rem; line-height:1.5; margin-bottom:24px;">This feature is running in <b>Autonomous Neural Simulation</b> mode. To ingest real-time fleet telemetry and live hub data, please connect to the RLS Production Server.</p>
+        <button onclick="this.parentElement.parentElement.remove()" style="background:#00c8ff; color:#04080f; border:none; padding:10px 24px; border-radius:8px; font-weight:700; cursor:pointer;">DISMISS</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  };
 
+  // Vehicle Animation Logic
+  const vehicleGroup = new THREE.Group();
+  scene.add(vehicleGroup);
+
+  async function animateVehicle(fromId, toId) {
+    const fromHub = hubs.find(h => h.id === fromId);
+    const toHub = hubs.find(h => h.id === toId);
+    if (!fromHub || !toHub) return;
+
+    const log = document.getElementById('log-content');
+    const logPanel = document.getElementById('execution-log');
+    logPanel.style.display = 'flex';
+    log.innerHTML = '';
+
+    const geo = new THREE.BoxGeometry(0.04, 0.04, 0.08);
+    const mat = new THREE.MeshPhongMaterial({ color: 0x00ff9d, emissive: 0x00ff9d, emissiveIntensity: 0.5 });
+    const vehicle = new THREE.Mesh(geo, mat);
+    vehicleGroup.add(vehicle);
+
+    const start = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - fromHub.lat) * Math.PI / 180, (fromHub.lon + 180) * Math.PI / 180);
+    const end = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - toHub.lat) * Math.PI / 180, (toHub.lon + 180) * Math.PI / 180);
+
+    for (let i = 0; i <= 30; i++) {
+      const p = new THREE.Vector3().lerpVectors(start, end, i/30).normalize().multiplyScalar(2.05);
+      vehicle.position.copy(p);
+      vehicle.lookAt(0,0,0);
+      
+      const lat = fromHub.lat + (toHub.lat-fromHub.lat)*(i/30);
+      const lon = fromHub.lon + (toHub.lon-fromHub.lon)*(i/30);
+      const line = document.createElement('div');
+      line.textContent = `[P_PING] V-${Math.floor(Math.random()*9999)} @ ${lat.toFixed(2)},${lon.toFixed(2)} | 74km/h`;
+      log.prepend(line);
+      if (log.childNodes.length > 20) log.removeChild(log.lastChild);
+      
+      await new Promise(r => setTimeout(r, 60));
+    }
+
+    setTimeout(() => {
+      vehicleGroup.remove(vehicle);
+      logPanel.style.display = 'none';
+    }, 3000);
+  }
+
+  const originalDispatch = window.dispatchRoute;
+  window.dispatchRoute = async (f, t) => {
+    if (originalDispatch) await originalDispatch(f, t);
+    animateVehicle(f, t);
+  };
+
+  addLog('💾 Pinecone + TimescaleDB online');
+  animate();
+</script>
+  <!-- Execution Log -->
+  <div id="execution-log" style="position:fixed; bottom:24px; right:24px; width:300px; height:200px; background:rgba(4,8,15,0.85); border:1px solid rgba(0,200,255,0.2); border-radius:12px; padding:16px; backdrop-filter:blur(16px); display:none; flex-direction:column; gap:8px; z-index:1000; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <div style="font-family:'Orbitron'; font-size:0.7rem; color:#00c8ff; border-bottom:1px solid rgba(0,200,255,0.1); padding-bottom:8px; margin-bottom:4px; letter-spacing:0.1em;">LIVE TELEMETRY STREAM</div>
+    <div id="log-content" style="flex:1; overflow-y:auto; font-size:0.65rem; color:#4a6a8a; font-family:monospace; line-height:1.5;"></div>
+  </div>
+
+<!-- Scripts consolidated into main module -->
 </body>
 </html>

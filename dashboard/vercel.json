@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "name": "rls-dash-v5",
+  "builds": [
+    { "src": "main.py", "use": "@vercel/python" },
+    { "src": "dashboard.html", "use": "@vercel/static" }
+  ],
+  "rewrites": [
+    { "source": "/", "destination": "/dashboard.html" },
+    { "source": "/api/(.*)", "destination": "/main.py" }
+  ]
+}

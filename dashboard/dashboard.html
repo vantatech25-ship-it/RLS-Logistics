@@ -54,9 +54,16 @@
       background: var(--card); border: 1px solid var(--border);
       border-radius: 12px; padding: 18px 20px;
       position: relative; overflow: hidden;
-      transition: border-color .2s, transform .15s;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
     }
-    .kpi-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .kpi-card:hover { 
+      border-color: var(--accent); 
+      transform: translateY(-4px); 
+      box-shadow: 0 12px 24px rgba(0, 200, 255, 0.15);
+      background: rgba(10, 18, 38, 1);
+    }
+    .kpi-card:active { transform: scale(0.97); }
     .kpi-card::before {
       content: ''; position: absolute; inset: 0;
       background: linear-gradient(135deg, rgba(0,200,255,.04), transparent);
@@ -101,6 +108,33 @@
     .status-pill.done { background: rgba(0,255,157,.12); color: var(--green); }
     .status-pill.pend { background: rgba(255,171,0,.12); color: var(--orange); }
 
+    /* ── Overlay ─────────────────────────────────── */
+    .sync-overlay {
+      position: fixed; inset: 0; background: rgba(4,8,15,0.7);
+      backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center;
+      z-index: 1000; flex-direction: column; gap: 12px;
+    }
+    .sync-spinner { width: 40px; height: 40px; border: 3px solid rgba(0,200,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .sync-text { font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: var(--accent); letter-spacing: 0.1em; }
+
+    /* ── Dispatch Modal ────────────────────────── */
+    #dispatch-modal {
+      position: fixed; inset: 0; background: rgba(4,8,15,0.85);
+      backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center;
+      z-index: 9000; font-family:'Inter', sans-serif;
+    }
+    .modal-content {
+      background:#080e1c; border:1px solid var(--accent); padding:32px; border-radius:16px; 
+      width:400px; text-align:center; box-shadow:0 0 50px rgba(0,200,255,0.2);
+    }
+    .modal-title { font-family:'Orbitron'; color:var(--accent); font-size:1.2rem; margin-bottom:24px; }
+    .dispatch-field { margin-bottom: 20px; text-align: left; }
+    .dispatch-field label { display: block; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+    .dispatch-field select { width: 100%; background: #04080f; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 6px; }
+    .dispatch-btn { background:var(--accent); color:var(--bg); border:none; padding:12px 24px; border-radius:8px; font-weight:700; cursor:pointer; width: 100%; transition: opacity 0.2s; }
+    .dispatch-btn:hover { opacity: 0.85; }
+
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
     .live-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 5px; animation: pulse 2s infinite; }
   </style>
@@ -111,9 +145,10 @@
   <header>
     <span class="logo">◈ RLS LOGISTICS — KPI COMMAND CENTRE</span>
     <div class="header-right">
-      <span class="badge live"><span class="live-dot"></span>Live</span>
-      <span class="badge synced" id="engine-status">● Engine Online</span>
-      <span id="last-updated">Syncing…</span>
+      <button onclick="document.getElementById('dispatch-modal').style.display='flex'" style="background:rgba(0,200,255,0.1); border:1px solid var(--accent); color:var(--accent); padding:6px 16px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Manual Dispatch</button>
+      <button onclick="refresh()" style="background:none; border:1px solid var(--border); color:var(--muted); padding:4px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">FORCE REFRESH</button>
+      <span class="badge live"><span class="live-dot"></span>Neural Active</span>
+      <span id="last-updated">Updating…</span>
     </div>
   </header>
 
@@ -129,12 +164,12 @@
       <div class="kpi-card accent-red">
         <div class="kpi-label">Avg Congestion</div>
         <div class="kpi-value" id="kpi-cong">—</div>
-        <div class="kpi-sub">GNN score (0–1)</div>
+        <div class="kpi-sub">Real-time GNN score</div>
       </div>
       <div class="kpi-card accent-orange">
         <div class="kpi-label">Avg Load</div>
         <div class="kpi-value" id="kpi-load">—</div>
-        <div class="kpi-sub">Hub utilisation</div>
+        <div class="kpi-sub">Network utilisation</div>
       </div>
       <div class="kpi-card accent-green">
         <div class="kpi-label">Routes (24h)</div>
@@ -144,23 +179,23 @@
       <div class="kpi-card accent-purple">
         <div class="kpi-label">GNN Confidence</div>
         <div class="kpi-value" id="kpi-conf">—</div>
-        <div class="kpi-sub">Avg route score</div>
+        <div class="kpi-sub">Verification score</div>
       </div>
       <div class="kpi-card accent-blue">
         <div class="kpi-label">Live Vehicles</div>
         <div class="kpi-value" id="kpi-fleet">—</div>
-        <div class="kpi-sub">Pinging in ≤10 min</div>
+        <div class="kpi-sub">Active telemetry</div>
       </div>
     </div>
 
     <!-- Charts -->
     <div class="charts-grid">
       <div class="chart-card">
-        <h3>Hub Congestion Trend — JHB (last 12h)</h3>
+        <h3>Hub Congestion Trend</h3>
         <canvas id="trend-chart"></canvas>
       </div>
       <div class="chart-card">
-        <h3>Hub Congestion Breakdown</h3>
+        <h3>Hub Condition Summary</h3>
         <canvas id="cong-chart"></canvas>
       </div>
     </div>
@@ -168,9 +203,8 @@
     <!-- Hub + Routes tables -->
     <div class="two-col">
 
-      <!-- Hub scores table -->
       <div class="table-card">
-        <h3>Hub GNN Scores</h3>
+        <h3>Hub GNN Metrics</h3>
         <table>
           <thead>
             <tr>
@@ -178,38 +212,86 @@
             </tr>
           </thead>
           <tbody id="hub-table-body">
-            <tr><td colspan="4" style="color:var(--muted)">Loading…</td></tr>
+            <tr><td colspan="4" style="color:var(--muted)">Syncing...</td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Recent routes table -->
       <div class="table-card">
-        <h3>Recent Route Dispatches</h3>
+        <h3>Recent Autonomous Dispatches</h3>
         <table>
           <thead>
             <tr>
-              <th>Route</th><th>Predicted</th><th>Actual</th><th>Conf.</th><th>Status</th>
+              <th>Route</th><th>Cost Pred.</th><th>Actual</th><th>Conf.</th><th>Status</th>
             </tr>
           </thead>
           <tbody id="routes-table-body">
-            <tr><td colspan="5" style="color:var(--muted)">Loading…</td></tr>
+            <tr><td colspan="5" style="color:var(--muted)">Retrieving...</td></tr>
           </tbody>
         </table>
       </div>
 
+      <div class="table-card" style="grid-column: span 2;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h3>Fleet Telemetry Stream</h3>
+          <span style="font-size:0.65rem; color:var(--green); font-weight:700;">● REAL-TIME PINGS ACTIVE</span>
+        </div>
+        <div style="max-height: 250px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Vehicle ID</th><th>Last Hub</th><th>Position</th><th>Speed</th><th>Heading</th>
+              </tr>
+            </thead>
+            <tbody id="fleet-table-body">
+              <tr><td colspan="5" style="color:var(--muted)">Syncing telemetry...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </main>
 </div>
 
-<script>
-const API = window.location.hostname === 'localhost'? 'http://localhost:8000' : '';
+<!-- Manual Dispatch Modal -->
+<div id="dispatch-modal">
+  <div class="modal-content">
+    <div class="modal-title">Manual Route Dispatch</div>
+    <div class="dispatch-field">
+      <label>Source Hub (JHB/CPT/DBN/PE)</label>
+      <select id="dispatch-from">
+        <option value="JHB">Johannesburg (JHB)</option>
+        <option value="CPT">Cape Town (CPT)</option>
+        <option value="DBN">Durban (DBN)</option>
+        <option value="PE">Port Elizabeth (PE)</option>
+      </select>
+    </div>
+    <div class="dispatch-field">
+      <label>Destination Hub</label>
+      <select id="dispatch-to">
+        <option value="CPT">Cape Town (CPT)</option>
+        <option value="JHB">Johannesburg (JHB)</option>
+        <option value="DBN">Durban (DBN)</option>
+        <option value="PE">Port Elizabeth (PE)</option>
+      </select>
+    </div>
+    <button class="dispatch-btn" onclick="submitDispatch()">OPTIMIZE & DISPATCH</button>
+    <button onclick="document.getElementById('dispatch-modal').style.display='none'" style="background:none; border:none; color:var(--muted); font-size:0.75rem; cursor:pointer; margin-top:16px;">Cancel Request</button>
+  </div>
+</div>
 
+<div class="sync-overlay" id="sync-overlay">
+  <div class="sync-spinner"></div>
+  <div class="sync-text">NEURAL SYNC IN PROGRESS...</div>
+</div>
+
+<div id="toast" style="position:fixed; bottom:24px; right:24px; background:var(--surface); border:1px solid var(--accent); color:var(--accent); padding:12px 20px; border-radius:8px; font-size:0.75rem; font-weight:600; display:none; z-index:9000; box-shadow:0 8px 32px rgba(0,0,0,0.5); backdrop-filter:blur(8px);"></div>
+
+<script>
 // ── Chart setup ─────────────────────────────────────────────────────────────
 Chart.defaults.color = '#4a6a8a';
 Chart.defaults.borderColor = 'rgba(0,200,255,0.08)';
 
-// Trend line chart
 const trendCtx = document.getElementById('trend-chart').getContext('2d');
 const trendChart = new Chart(trendCtx, {
   type: 'line',
@@ -220,10 +302,9 @@ const trendChart = new Chart(trendCtx, {
       { label: 'Load',       data: [], borderColor: '#00c8ff', backgroundColor: 'rgba(0,200,255,0.07)', tension: 0.4, fill: true, pointRadius: 2 },
     ]
   },
-  options: { responsive: true, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { min: 0, max: 1 } } }
+  options: { responsive: true, plugins: { legend: { labels: { font: { size: 11 } } } }, scales: { y: { min: 0 } } }
 });
 
-// Doughnut chart
 const congCtx = document.getElementById('cong-chart').getContext('2d');
 const congChart = new Chart(congCtx, {
   type: 'doughnut',
@@ -234,109 +315,80 @@ const congChart = new Chart(congCtx, {
   options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } } }, cutout: '65%' }
 });
 
-// ── Congestion bar color ─────────────────────────────────────────────────────
 function congColor(v) {
   if (v < 0.35) return '#00ff9d';
   if (v < 0.55) return '#ffab00';
   return '#ff3b5c';
 }
 
-// ── Fetch & render KPIs ─────────────────────────────────────────────────────
-async function fetchKPIs() {
-  // Simulate if backend not running
-  let d;
+// ── Live Data Fetching ──────────────────────────────────────────────────────
+
+async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
-    const r = await fetch(`${API}/api/kpis`, { signal: AbortSignal.timeout(3000) });
-    d = await r.json();
-  } catch {
-    d = { hub_count:4, avg_congestion:0.44, avg_load:0.625, recent_readings:12,
-          routes_24h:38, routes_completed:34, avg_cost_delta:-12.3, avg_confidence:72.4, live_vehicles:6 };
+    const opts = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body) opts.body = JSON.stringify(body);
+    const resp = await fetch(endpoint, opts);
+    return await resp.json();
+  } catch (e) {
+    console.error(`Fetch error at ${endpoint}:`, e);
+    return null;
   }
-  document.getElementById('kpi-hubs').textContent   = d.hub_count;
-  document.getElementById('kpi-cong').textContent   = (d.avg_congestion * 100).toFixed(0) + '%';
-  document.getElementById('kpi-load').textContent   = (d.avg_load * 100).toFixed(0) + '%';
-  document.getElementById('kpi-routes').textContent = d.routes_24h;
-  document.getElementById('kpi-routes-sub').textContent = `${d.routes_completed} completed`;
-  document.getElementById('kpi-conf').textContent   = d.avg_confidence.toFixed(0) + '%';
-  document.getElementById('kpi-fleet').textContent  = d.live_vehicles;
-  document.getElementById('last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour12: false });
 }
 
-// ── Fetch & render Hub scores ────────────────────────────────────────────────
-async function fetchHubs() {
-  let hubs;
-  try {
-    const r = await fetch(`${API}/api/hubs`, { signal: AbortSignal.timeout(3000) });
-    const j = await r.json();
-    hubs = j.success ? j.data : null;
-  } catch { hubs = null; }
+async function updateKPIs() {
+  const d = await fetchAPI('/api/kpis');
+  if (!d) return;
 
-  // Fallback demo data
-  if (!hubs) {
-    hubs = [
-      { hub_id:'JHB', load_factor:0.75, congestion_score:0.51, connectivity:3 },
-      { hub_id:'CPT', load_factor:0.55, congestion_score:0.39, connectivity:2 },
-      { hub_id:'DBN', load_factor:0.80, congestion_score:0.55, connectivity:2 },
-      { hub_id:'PE',  load_factor:0.40, congestion_score:0.30, connectivity:3 },
-    ];
-  }
+  document.getElementById('kpi-hubs').textContent   = d.hub_count;
+  document.getElementById('kpi-cong').textContent   = (d.avg_congestion * 100).toFixed(1) + '%';
+  document.getElementById('kpi-load').textContent   = (d.avg_load * 100).toFixed(1) + '%';
+  document.getElementById('kpi-routes').textContent = d.routes_24h;
+  document.getElementById('kpi-routes-sub').textContent = `${d.routes_completed} completed`;
+  document.getElementById('kpi-conf').textContent   = d.avg_confidence.toFixed(1) + '%';
+  document.getElementById('kpi-fleet').textContent  = d.live_vehicles;
+  document.getElementById('last-updated').textContent = 'Live Sync ' + new Date().toLocaleTimeString('en-ZA', { hour12: false });
+}
+
+async function updateHubs() {
+  const d = await fetchAPI('/api/hubs');
+  if (!d || !d.success) return;
+  const hubs = d.data;
 
   const tbody = document.getElementById('hub-table-body');
   tbody.innerHTML = hubs.map(h => `
     <tr>
       <td><strong>${h.hub_id}</strong></td>
-      <td>${(h.load_factor*100).toFixed(0)}%</td>
+      <td>${((h.load_factor || 0)*100).toFixed(0)}%</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">
-          <div class="cong-bar-wrap"><div class="cong-bar" style="width:${h.congestion_score*100}%;background:${congColor(h.congestion_score)}"></div></div>
-          <span style="font-size:.75rem;color:${congColor(h.congestion_score)}">${(h.congestion_score*100).toFixed(0)}%</span>
+          <div class="cong-bar-wrap"><div class="cong-bar" style="width:${(h.congestion_score || 0)*100}%;background:${congColor(h.congestion_score || 0)}"></div></div>
+          <span style="font-size:.75rem;color:${congColor(h.congestion_score || 0)}">${((h.congestion_score || 0)*100).toFixed(0)}%</span>
         </div>
       </td>
       <td>${h.connectivity}</td>
     </tr>`).join('');
 
-  // Update doughnut
-  congChart.data.labels   = hubs.map(h => h.hub_id);
-  congChart.data.datasets[0].data = hubs.map(h => +(h.congestion_score).toFixed(3));
+  congChart.data.labels = hubs.map(h => h.hub_id);
+  congChart.data.datasets[0].data = hubs.map(h => +(h.congestion_score || 0).toFixed(3));
   congChart.update();
 }
 
-// ── Fetch & render trend ─────────────────────────────────────────────────────
-async function fetchTrend() {
-  let data;
-  try {
-    const r = await fetch(`${API}/api/congestion-trend?hub_id=JHB`, { signal: AbortSignal.timeout(3000) });
-    data = await r.json();
-  } catch {
-    // Synthetic trend
-    data = Array.from({ length: 24 }, (_, i) => ({
-      time: new Date(Date.now() - (23-i)*30*60000).toISOString(),
-      congestion: 0.3 + Math.random() * 0.4,
-      load: 0.5 + Math.random() * 0.3,
-    }));
-  }
-  trendChart.data.labels = data.map(d => new Date(d.time).toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', hour12:false }));
-  trendChart.data.datasets[0].data = data.map(d => +d.congestion.toFixed(3));
-  trendChart.data.datasets[1].data = data.map(d => +d.load.toFixed(3));
+async function updateTrend() {
+  const d = await fetchAPI('/api/congestion-trend?hub_id=JHB');
+  if (!d || !Array.isArray(d)) return;
+
+  trendChart.data.labels = d.map(r => new Date(r.time).toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', hour12:false }));
+  trendChart.data.datasets[0].data = d.map(r => r.congestion);
+  trendChart.data.datasets[1].data = d.map(r => r.load);
   trendChart.update();
 }
 
-// ── Fetch & render routes ────────────────────────────────────────────────────
-async function fetchRoutes() {
-  let routes;
-  try {
-    const r = await fetch(`${API}/api/routes/recent`, { signal: AbortSignal.timeout(3000) });
-    routes = await r.json();
-  } catch {
-    routes = [
-      { from_hub_id:'JHB', to_hub_id:'CPT', predicted_cost:2293, actual_cost:2180, gnn_confidence:64, completed:true },
-      { from_hub_id:'JHB', to_hub_id:'DBN', predicted_cost:680,  actual_cost:null, gnn_confidence:79, completed:false },
-      { from_hub_id:'CPT', to_hub_id:'PE',  predicted_cost:820,  actual_cost:855,  gnn_confidence:71, completed:true },
-      { from_hub_id:'DBN', to_hub_id:'PE',  predicted_cost:1240, actual_cost:1250, gnn_confidence:60, completed:true },
-    ];
-  }
+async function updateRoutes() {
+  const routes = await fetchAPI('/api/routes/recent');
+  if (!routes || !Array.isArray(routes)) return;
+
   const tbody = document.getElementById('routes-table-body');
-  tbody.innerHTML = routes.slice(0,8).map(r => `
+  tbody.innerHTML = routes.map(r => `
     <tr>
       <td><strong>${r.from_hub_id}</strong> → ${r.to_hub_id}</td>
       <td style="color:var(--muted)">${r.predicted_cost ? r.predicted_cost.toFixed(0) : '—'}</td>
@@ -346,13 +398,65 @@ async function fetchRoutes() {
     </tr>`).join('');
 }
 
-// ── Poll loop ────────────────────────────────────────────────────────────────
-async function refresh() {
-  await Promise.all([fetchKPIs(), fetchHubs(), fetchTrend(), fetchRoutes()]);
+async function updateFleet() {
+  const fleet = await fetchAPI('/api/fleet');
+  if (!fleet || !Array.isArray(fleet)) return;
+
+  const tbody = document.getElementById('fleet-table-body');
+  tbody.innerHTML = fleet.map(v => `
+    <tr>
+      <td><span style="color:var(--accent)">${v.vehicle_id}</span></td>
+      <td>${v.hub_id}</td>
+      <td style="font-family:monospace; font-size:0.75rem;">${v.latitude.toFixed(3)}, ${v.longitude.toFixed(3)}</td>
+      <td>${v.speed_kmh} km/h</td>
+      <td>${v.heading_deg}°</td>
+    </tr>`).join('');
 }
 
+// ── Manual Dispatch ─────────────────────────────────────────────────────────
+
+async function submitDispatch() {
+  const from = document.getElementById('dispatch-from').value;
+  const to = document.getElementById('dispatch-to').value;
+  
+  if (from === to) {
+    showToast("Error: Source and destination must be different.");
+    return;
+  }
+
+  const overlay = document.getElementById('sync-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('dispatch-modal').style.display = 'none';
+
+  const result = await fetchAPI(`/api/dispatch?from_hub_id=${from}&to_hub_id=${to}`, 'POST');
+  
+  setTimeout(async () => {
+    overlay.style.display = 'none';
+    if (result && result.success) {
+      showToast(`Success: Route ${result.route_id} dispatched with ${result.data.confidence}% confidence.`);
+      refresh();
+    } else {
+      showToast(`Error: ${result?.error || 'Dispatch pipeline failed.'}`);
+    }
+  }, 1000);
+}
+
+// ── Control ─────────────────────────────────────────────────────────────────
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 5000);
+}
+
+async function refresh() {
+  await Promise.all([updateKPIs(), updateHubs(), updateTrend(), updateRoutes(), updateFleet()]);
+}
+
+// Initial fire
 refresh();
-setInterval(refresh, 15000); // refresh every 15s
+setInterval(refresh, 15000); // 15s live polling
 </script>
 </body>
 </html>

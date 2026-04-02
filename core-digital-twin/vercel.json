@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "name": "rls-twin-v5",
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "assets/**", "use": "@vercel/static" }
+  ]
+}

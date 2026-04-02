@@ -1,18 +1,18 @@
 """
 orchestrator.py
 LangGraph agent orchestrating the Living Neural Network logistics pipeline.
+Now exposed as a FastAPI service for real-time UI dispatching.
 
 Graph flow:
-  fetch_hubs → score_hubs → store_embeddings → request_route → log_route → END
-
-Each node is a pure function operating on a shared AgentState TypedDict.
-LangGraph handles state threading and conditional branching automatically.
+  fetch_hubs → store_memory → request_route → log_route → END
 """
 
 import asyncio
 import uuid
 import httpx
 from typing import TypedDict, List, Dict, Any, Optional
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from langgraph.graph import StateGraph, END
 
@@ -27,102 +27,97 @@ from config import ROUTING_ENGINE_URL
 
 
 # ---------------------------------------------------------------------------
+# App Setup
+# ---------------------------------------------------------------------------
+
+app = FastAPI(title="RLS Logistics Orchestrator", version="1.1.0")
+
+class DispatchRequest(BaseModel):
+    from_hub_id: str
+    to_hub_id: str
+
+# ---------------------------------------------------------------------------
 # Agent State — shared across all graph nodes
 # ---------------------------------------------------------------------------
 
 class AgentState(TypedDict):
     """
     The single mutable state object that flows through the LangGraph pipeline.
-    Every node reads from and writes to this dict.
     """
     from_hub_id: str
     to_hub_id: str
-
-    # Populated by fetch_hubs
     hub_features: List[Dict[str, Any]]
-
-    # Populated by request_route
     route_recommendation: Optional[Dict[str, Any]]
-
-    # Tracking
     route_id: str
     errors: List[str]
 
 
 # ---------------------------------------------------------------------------
-# Node 1: Fetch live hub data and GNN scores from Rust engine
+# Nodes (Refactored for cleaner async execution)
 # ---------------------------------------------------------------------------
 
 async def fetch_hubs(state: AgentState) -> AgentState:
-    print("[LangGraph] Node: fetch_hubs")
+    print(f"[Orchestrator] Fetching live hubs from {ROUTING_ENGINE_URL}")
     async with httpx.AsyncClient() as client:
-        resp = await client.get(f"{ROUTING_ENGINE_URL}/hubs", timeout=10.0)
-        resp.raise_for_status()
-        data = resp.json()
-
-    if data.get("success"):
-        state["hub_features"] = data["data"]
-        print(f"[LangGraph] Fetched {len(state['hub_features'])} hub features")
-    else:
-        state["errors"].append("Failed to fetch hubs from routing engine")
+        try:
+            resp = await client.get(f"{ROUTING_ENGINE_URL}/hubs", timeout=5.0)
+            resp.raise_for_status()
+            data = resp.json()
+            if data.get("success"):
+                state["hub_features"] = data["data"]
+            else:
+                state["errors"].append("Routing engine returned success=false")
+        except Exception as e:
+            state["errors"].append(f"HTTP Error: {str(e)}")
     return state
 
-
-# ---------------------------------------------------------------------------
-# Node 2: Store hub embeddings in Pinecone + telemetry in TimescaleDB
-# ---------------------------------------------------------------------------
 
 async def store_memory(state: AgentState) -> AgentState:
-    print("[LangGraph] Node: store_memory")
-    tasks = []
     hub_features = state.get("hub_features", [])
-    for hub in hub_features:
-        tasks.append(asyncio.create_task(_store_single_hub(hub)))
-    await asyncio.gather(*tasks)
+    if not hub_features:
+        return state
+
+    print(f"[Orchestrator] Storing memory for {len(hub_features)} hubs")
+    
+    # Store telemetry and embeddings in parallel
+    async def _process_hub(h):
+        try:
+            upsert_hub_embedding(h)
+            await record_hub_telemetry(h)
+        except Exception as e:
+            print(f"Error storing hub {h.get('hub_id')}: {e}")
+
+    await asyncio.gather(*[_process_hub(h) for h in hub_features])
     return state
 
-
-async def _store_single_hub(hub: Dict[str, Any]) -> None:
-    # Vector memory (Pinecone)
-    upsert_hub_embedding(hub)
-    # Time-series telemetry (TimescaleDB)
-    await record_hub_telemetry(hub)
-
-
-# ---------------------------------------------------------------------------
-# Node 3: Request GNN-optimised route from Rust engine
-# ---------------------------------------------------------------------------
 
 async def request_route(state: AgentState) -> AgentState:
-    print(f"[LangGraph] Node: request_route ({state['from_hub_id']} → {state['to_hub_id']})")
+    print(f"[Orchestrator] Requesting GNN route: {state['from_hub_id']} → {state['to_hub_id']}")
     async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{ROUTING_ENGINE_URL}/route",
-            json={"from_hub_id": state["from_hub_id"], "to_hub_id": state["to_hub_id"]},
-            timeout=10.0,
-        )
-
-    recommendation = resp.json().get("data")
-    if resp.status_code == 200 and recommendation:
-        state["route_recommendation"] = recommendation
-        print(f"[LangGraph] Route confidence: {recommendation.get('confidence')}%")
-    else:
-        # Fallback: try to find similar hub via Pinecone and reroute
-        print("[LangGraph] Primary route failed — querying Pinecone for alternative hub")
-        ref_hub = state["hub_features"][0] if state["hub_features"] else {}
-        alternatives = find_similar_hubs(ref_hub, top_k=3)
-        state["errors"].append(f"Route failed. Pinecone alternatives: {[a['id'] for a in alternatives]}")
+        try:
+            resp = await client.post(
+                f"{ROUTING_ENGINE_URL}/route",
+                json={"from_hub_id": state["from_hub_id"], "to_hub_id": state["to_hub_id"]},
+                timeout=10.0,
+            )
+            recommendation = resp.json().get("data")
+            if resp.status_code == 200 and recommendation:
+                state["route_recommendation"] = recommendation
+            else:
+                # Fallback: Query Pinecone for similar hub logic
+                print("[Orchestrator] Route failed — leveraging Pinecone memory layer...")
+                ref_hub = state["hub_features"][0] if state["hub_features"] else {"hub_id": state["from_hub_id"]}
+                alternatives = find_similar_hubs(ref_hub, top_k=2)
+                state["errors"].append(f"Route fail. Alt suggestions: {[a.get('id') for a in alternatives]}")
+        except Exception as e:
+            state["errors"].append(f"Route API error: {str(e)}")
     return state
 
 
-# ---------------------------------------------------------------------------
-# Node 4: Log dispatched route to TimescaleDB
-# ---------------------------------------------------------------------------
-
 async def log_route(state: AgentState) -> AgentState:
-    print("[LangGraph] Node: log_route")
     rec = state.get("route_recommendation")
     if rec:
+        print("[Orchestrator] Logging dispatched route to persistence layer")
         await log_route_execution({
             "route_id": state["route_id"],
             "from_hub_id": state["from_hub_id"],
@@ -133,64 +128,65 @@ async def log_route(state: AgentState) -> AgentState:
     return state
 
 
-# ---------------------------------------------------------------------------
-# Conditional edge: should we abort if route failed?
-# ---------------------------------------------------------------------------
-
 def check_route(state: AgentState) -> str:
-    if state.get("route_recommendation"):
-        return "log_route"
-    return END
+    return "log_route" if state.get("route_recommendation") else END
 
 
 # ---------------------------------------------------------------------------
-# Build the LangGraph state machine
+# Graph Construction
 # ---------------------------------------------------------------------------
 
 def build_graph() -> StateGraph:
-    graph = StateGraph(AgentState)
+    workflow = StateGraph(AgentState)
+    workflow.add_node("fetch_hubs",   fetch_hubs)
+    workflow.add_node("store_memory", store_memory)
+    workflow.add_node("request_route", request_route)
+    workflow.add_node("log_route",    log_route)
 
-    graph.add_node("fetch_hubs",   fetch_hubs)
-    graph.add_node("store_memory", store_memory)
-    graph.add_node("request_route", request_route)
-    graph.add_node("log_route",    log_route)
-
-    graph.set_entry_point("fetch_hubs")
-    graph.add_edge("fetch_hubs",    "store_memory")
-    graph.add_edge("store_memory",  "request_route")
-    graph.add_conditional_edges("request_route", check_route, {
+    workflow.set_entry_point("fetch_hubs")
+    workflow.add_edge("fetch_hubs",    "store_memory")
+    workflow.add_edge("store_memory",  "request_route")
+    workflow.add_conditional_edges("request_route", check_route, {
         "log_route": "log_route",
-        END: END,
+        END: END
     })
-    graph.add_edge("log_route", END)
-
-    return graph.compile()
+    workflow.add_edge("log_route", END)
+    return workflow.compile()
 
 
 # ---------------------------------------------------------------------------
-# Run a dispatch
+# API Endpoints
 # ---------------------------------------------------------------------------
 
-async def dispatch_route(from_hub_id: str, to_hub_id: str) -> Dict[str, Any]:
-    """
-    Main entry point called by any external system (webhook, scheduler, UI).
-    Returns the final agent state including the route recommendation.
-    """
-    app = build_graph()
+@app.get("/health")
+async def health():
+    return {"status": "online", "service": "rls-orchestrator"}
+
+@app.post("/dispatch")
+async def dispatch_route(req: DispatchRequest):
+    """Entry point for the dashboard UI."""
+    orchestrator = build_graph()
     initial_state: AgentState = {
-        "from_hub_id": from_hub_id,
-        "to_hub_id": to_hub_id,
+        "from_hub_id": req.from_hub_id,
+        "to_hub_id": req.to_hub_id,
         "hub_features": [],
         "route_recommendation": None,
         "route_id": str(uuid.uuid4()),
         "errors": [],
     }
-    result = await app.ainvoke(initial_state)
-    return result
+    
+    try:
+        result = await orchestrator.ainvoke(initial_state)
+        return {
+            "success": len(result["errors"]) == 0 or result.get("route_recommendation") is not None,
+            "data": result.get("route_recommendation"),
+            "route_id": result["route_id"],
+            "errors": result["errors"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":
-    result = asyncio.run(dispatch_route("JHB", "CPT"))
-    import json
-    print("\n=== Final Agent State ===")
-    print(json.dumps(result, indent=2, default=str))
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8002)

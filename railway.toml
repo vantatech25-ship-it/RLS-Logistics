@@ -32,7 +32,7 @@ services:
       TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
       PINECONE_INDEX: rls-logistics-hubs
       PINECONE_API_KEY: ${{ PINECONE_API_KEY }}
-    startCommand: python orchestrator.py
+    startCommand: uvicorn orchestrator:app --host 0.0.0.0 --port 8002
 
   dashboard:
     source: ./dashboard

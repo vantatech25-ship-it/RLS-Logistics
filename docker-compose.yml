@@ -66,6 +66,8 @@ services:
       context: ./orchestration
       dockerfile: Dockerfile
     container_name: rls_orchestrator
+    ports:
+      - "8002:8002"
     depends_on:
       routing-engine:
         condition: service_healthy
@@ -77,6 +79,7 @@ services:
       PINECONE_API_KEY: ${PINECONE_API_KEY}
       PINECONE_INDEX: rls-logistics-hubs
     restart: unless-stopped
+    command: ["uvicorn", "orchestrator:app", "--host", "0.0.0.0", "--port", "8002"]
     networks:
       - rls-net
 
