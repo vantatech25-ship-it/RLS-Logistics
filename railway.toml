@@ -3,7 +3,7 @@
 # Docs: https://docs.railway.app
 
 services:
-  routing-engine:
+  "routing-engine":
     source: ./routing-engine
     build:
       dockerfile: Dockerfile
@@ -12,11 +12,11 @@ services:
       sleepApplication: false
     variables:
       RUST_LOG: routing_engine=info
-      GNN_SIDECAR_URL: ${{ gnn-sidecar.RAILWAY_PRIVATE_URL }}
+      GNN_SIDECAR_URL: ${{ "gnn-sidecar".RAILWAY_PRIVATE_URL }}
     ports:
       - target: 3000
 
-  gnn-sidecar:
+  "gnn-sidecar":
     source: ./routing-engine
     build:
       dockerfile: Dockerfile.gnn
@@ -28,7 +28,7 @@ services:
     build:
       dockerfile: Dockerfile
     variables:
-      ROUTING_ENGINE_URL: ${{ routing-engine.RAILWAY_PRIVATE_URL }}
+      ROUTING_ENGINE_URL: ${{ "routing-engine".RAILWAY_PRIVATE_URL }}
       TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
       PINECONE_INDEX: rls-logistics-hubs
       PINECONE_API_KEY: ${{ PINECONE_API_KEY }}
@@ -40,13 +40,13 @@ services:
       dockerfile: Dockerfile
     variables:
       TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
-      ROUTING_ENGINE_URL: ${{ routing-engine.RAILWAY_PRIVATE_URL }}
+      ROUTING_ENGINE_URL: ${{ "routing-engine".RAILWAY_PRIVATE_URL }}
     ports:
       - target: 8000
 
-  digital-twin:
+  "digital-twin":
     source: ./core-digital-twin
     variables:
-      ROUTING_ENGINE_URL: https://${{ routing-engine.RAILWAY_PUBLIC_DOMAIN }}
+      ROUTING_ENGINE_URL: https://${{ "routing-engine".RAILWAY_PUBLIC_DOMAIN }}
     ports:
       - target: 80
