@@ -143,7 +143,10 @@
 <div class="app">
 
   <header>
-    <span class="logo">◈ RLS LOGISTICS — KPI COMMAND CENTRE</span>
+    <span class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><polyline points="16 16 20 12 16 8"></polyline><line x1="12" y1="18" x2="12" y2="18"></line><line x1="4" y1="12" x2="20" y2="12"></line><polyline points="8 8 4 12 8 16"></polyline></svg>
+      RLS LOGISTICS — KPI COMMAND CENTRE
+    </span>
     <div class="header-right">
       <button onclick="document.getElementById('dispatch-modal').style.display='flex'" style="background:rgba(0,200,255,0.1); border:1px solid var(--accent); color:var(--accent); padding:6px 16px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Manual Dispatch</button>
       <button onclick="refresh()" style="background:none; border:1px solid var(--border); color:var(--muted); padding:4px 12px; border-radius:4px; cursor:pointer; font-size:0.75rem; font-weight:600;">FORCE REFRESH</button>
@@ -327,7 +330,7 @@ async function fetchAPI(endpoint, method = 'GET', body = null) {
   try {
     const opts = { method, headers: { 'Content-Type': 'application/json' } };
     if (body) opts.body = JSON.stringify(body);
-    const resp = await fetch(endpoint, opts);
+    const resp = await fetch('http://localhost:8000' + endpoint, opts);
     return await resp.json();
   } catch (e) {
     console.error(`Fetch error at ${endpoint}:`, e);
@@ -429,6 +432,9 @@ async function submitDispatch() {
   document.getElementById('dispatch-modal').style.display = 'none';
 
   const result = await fetchAPI(`/api/dispatch?from_hub_id=${from}&to_hub_id=${to}`, 'POST');
+  
+  // Notify Master Portal if and when it's running in an iframe
+  window.parent.postMessage({ type: 'dispatch_triggered', from, to }, '*');
   
   setTimeout(async () => {
     overlay.style.display = 'none';

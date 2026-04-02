@@ -30,14 +30,12 @@
       height: 100vh;
     }
 
-    /* ───── Three.js canvas ───── */
     #twin-canvas {
       position: fixed;
       inset: 0;
       z-index: 0;
     }
 
-    /* ───── Header ───── */
     header {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -76,7 +74,6 @@
     .pill.online  { background: rgba(0,255,157,0.15); color: var(--green); border: 1px solid var(--green); }
     .pill.loading { background: rgba(255,140,0,0.15);  color: var(--orange); border: 1px solid var(--orange); }
 
-    /* ───── Side panel ───── */
     #side-panel {
       position: fixed;
       top: 72px;
@@ -107,7 +104,6 @@
       margin-bottom: 10px;
     }
 
-    /* Hub cards */
     .hub-card {
       background: rgba(0, 200, 255, 0.04);
       border: 1px solid var(--border);
@@ -160,7 +156,6 @@
     .route-form button:hover   { opacity: 0.88; }
     .route-form button:active  { transform: scale(0.97); }
 
-    /* Route result */
     #route-result {
       margin-top: 4px;
       background: rgba(0,255,157,0.05);
@@ -172,7 +167,6 @@
     #route-result .result-row { font-size: 0.78rem; margin-bottom: 4px; display: flex; justify-content: space-between; }
     #route-result .result-row span:last-child { font-weight: 600; color: var(--green); }
 
-    /* Activity log */
     #activity-log {
       max-height: 120px;
       overflow-y: auto;
@@ -194,7 +188,6 @@
 
     @keyframes fadeIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
 
-    /* ───── Info overlay on hub click ───── */
     #hub-tooltip {
       position: fixed;
       pointer-events: none;
@@ -210,42 +203,39 @@
     }
     #hub-tooltip h4 { color: var(--accent); margin-bottom: 6px; font-size: 0.82rem; }
     #hub-tooltip p  { margin: 2px 0; }
-
-    /* ───── Pulse ring on hubs ───── */
-    @keyframes pulseRing {
-      0%   { box-shadow: 0 0 0 0 rgba(0,200,255,0.7); }
-      70%  { box-shadow: 0 0 0 18px rgba(0,200,255,0); }
-      100% { box-shadow: 0 0 0 0 rgba(0,200,255,0); }
-    }
   </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
 
-<!-- Three.js canvas -->
 <canvas id="twin-canvas"></canvas>
 
-<!-- Header -->
 <header>
-  <span class="logo">⬡ RLS LOGISTICS — DIGITAL TWIN</span>
+  <span class="logo">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+    RLS LOGISTICS — DIGITAL TWIN
+  </span>
   <div class="status-pills">
     <span class="pill online" id="engine-pill">● SIMULATION MODE v1.2.1</span>
-    <span class="pill online" id="memory-pill">● NEURAL STANDALONE</span>
-    <button onclick="showServerAlert()" style="background:rgba(255,171,0,0.1); border:1px solid var(--orange); color:var(--orange); padding:2px 10px; border-radius:10px; font-size:0.65rem; font-weight:700; cursor:pointer;">CONNECT LIVE</button>
+    <span class="pill online" id="memory-pill">● LIVE MOCK SERVER</span>
   </div>
 </header>
 
-<!-- Side Panel -->
 <div id="side-panel">
 
-  <!-- Hub Network -->
   <div class="panel-section">
     <h3>Live Hub Network</h3>
-    <div id="hub-list">
-      <!-- Populated by JS -->
-    </div>
+    <div id="hub-list"></div>
   </div>
 
-  <!-- Route Dispatcher -->
   <div class="panel-section">
     <h3>Dispatch Route (GNN)</h3>
     <div class="route-form">
@@ -271,7 +261,6 @@
     </div>
   </div>
 
-  <!-- Activity Log -->
   <div class="panel-section">
     <h3>Agent Activity Log</h3>
     <div id="activity-log"></div>
@@ -279,7 +268,6 @@
 
 </div>
 
-<!-- Hub tooltip -->
 <div id="hub-tooltip">
   <h4 id="tt-name">—</h4>
   <p>Load: <strong id="tt-load">—</strong></p>
@@ -287,23 +275,12 @@
   <p>Connectivity: <strong id="tt-conn">—</strong></p>
 </div>
 
-<!-- Three.js + Digital Twin logic -->
-<script type="importmap">
-{
-  "imports": {
-    "three": "./assets/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
-  }
-}
-</script>
-
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-// ─────────────────────────────────────────────────────
-// 1. Hub data (mirrors the Rust demo network seed)
-// ─────────────────────────────────────────────────────
+const API_BASE = "http://localhost:8000/api";
+
 const HUBS = {
   JHB: { name: "Johannesburg Hub", lat: -26.2041, lon:  28.0473, load: 0.75, cong: 0.51, conn: 3 },
   CPT: { name: "Cape Town Hub",    lat: -33.9249, lon:  18.4241, load: 0.55, cong: 0.39, conn: 2 },
@@ -316,9 +293,6 @@ const EDGES = [
   ["CPT","PE"],  ["DBN","PE"],
 ];
 
-// ─────────────────────────────────────────────────────
-// 2. Convert lat/lon → 3D position on a sphere
-// ─────────────────────────────────────────────────────
 const RADIUS = 5;
 function latLonToVec3(lat, lon, r = RADIUS) {
   const phi   = (90 - lat) * (Math.PI / 180);
@@ -330,14 +304,11 @@ function latLonToVec3(lat, lon, r = RADIUS) {
   );
 }
 
-// ─────────────────────────────────────────────────────
-// 3. Scene setup
-// ─────────────────────────────────────────────────────
+// Scene setup
 const canvas   = document.getElementById('twin-canvas');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x050a18, 1);
 
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -349,40 +320,23 @@ controls.dampingFactor = 0.07;
 controls.minDistance   = 7;
 controls.maxDistance   = 20;
 
-// ─────── Lighting ───────
 scene.add(new THREE.AmbientLight(0x223366, 1.4));
 const dirLight = new THREE.DirectionalLight(0x00c8ff, 0.6);
 dirLight.position.set(5, 8, 5);
 scene.add(dirLight);
 
-// ─────── Globe ───────
-const globeGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
-const globeMat = new THREE.MeshPhongMaterial({
-  color: 0x040d24,
-  emissive: 0x0a1433,
-  transparent: true,
-  opacity: 0.92,
-  wireframe: false,
-});
-scene.add(new THREE.Mesh(globeGeo, globeMat));
+// Globe
+const globeMat = new THREE.MeshPhongMaterial({ color: 0x040d24, emissive: 0x0a1433, transparent: true, opacity: 0.92 });
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(RADIUS, 64, 64), globeMat));
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(RADIUS + 0.01, 32, 32), new THREE.MeshBasicMaterial({ color: 0x0a2040, wireframe: true, transparent: true, opacity: 0.18 })));
 
-// ─────── Grid lines (wireframe overlay) ───────
-const gridGeo = new THREE.SphereGeometry(RADIUS + 0.01, 32, 32);
-const gridMat = new THREE.MeshBasicMaterial({ color: 0x0a2040, wireframe: true, transparent: true, opacity: 0.18 });
-scene.add(new THREE.Mesh(gridGeo, gridMat));
-
-// ─────── Stars ───────
+// Stars
 const starGeo  = new THREE.BufferGeometry();
 const starVerts = [];
-for (let i = 0; i < 3000; i++) {
-  starVerts.push((Math.random()-0.5)*300, (Math.random()-0.5)*300, (Math.random()-0.5)*300);
-}
+for (let i = 0; i < 3000; i++) starVerts.push((Math.random()-0.5)*300, (Math.random()-0.5)*300, (Math.random()-0.5)*300);
 starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
 scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x4488cc, size: 0.12 })));
 
-// ─────────────────────────────────────────────────────
-// 4. Draw hub nodes
-// ─────────────────────────────────────────────────────
 function congestionColor(cong) {
   if (cong < 0.35) return new THREE.Color(0x00ff9d);
   if (cong < 0.55) return new THREE.Color(0xff8c00);
@@ -391,42 +345,19 @@ function congestionColor(cong) {
 
 const hubMeshes = {};
 const hubPositions = {};
-
 Object.entries(HUBS).forEach(([id, hub]) => {
   const pos = latLonToVec3(hub.lat, hub.lon);
   hubPositions[id] = pos;
 
-  // Glow sphere
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: congestionColor(hub.cong),
-    transparent: true,
-    opacity: 0.15,
-  });
-  scene.add(new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), glowMat));
-
-  // Hub core sphere
-  const mat = new THREE.MeshPhongMaterial({
-    color: congestionColor(hub.cong),
-    emissive: congestionColor(hub.cong),
-    emissiveIntensity: 0.45,
-  });
+  const mat = new THREE.MeshPhongMaterial({ color: congestionColor(hub.cong), emissive: congestionColor(hub.cong), emissiveIntensity: 0.45 });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 20, 20), mat);
   mesh.position.copy(pos);
   mesh.userData = { id, ...hub };
   scene.add(mesh);
   hubMeshes[id] = mesh;
-
-  // Spike (line from surface to hub)
-  const spikeGeo = new THREE.BufferGeometry().setFromPoints([
-    pos.clone().normalize().multiplyScalar(RADIUS),
-    pos,
-  ]);
-  scene.add(new THREE.Line(spikeGeo, new THREE.LineBasicMaterial({ color: 0x00c8ff, transparent: true, opacity: 0.4 })));
 });
 
-// ─────────────────────────────────────────────────────
-// 5. Draw route edges
-// ─────────────────────────────────────────────────────
+// Edges & Arc Logic
 function arcPoints(p1, p2, segments = 40) {
   const points = [];
   for (let i = 0; i <= segments; i++) {
@@ -440,21 +371,15 @@ function arcPoints(p1, p2, segments = 40) {
 
 const edgeMat = new THREE.LineBasicMaterial({ color: 0x005f8a, transparent: true, opacity: 0.55 });
 let activeArcMesh = null;
+EDGES.forEach(([a, b]) => scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(arcPoints(hubPositions[a], hubPositions[b])), edgeMat)));
 
-EDGES.forEach(([a, b]) => {
-  const pts = arcPoints(hubPositions[a], hubPositions[b]);
-  const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  scene.add(new THREE.Line(geo, edgeMat));
-});
-
-// ─────────────────────────────────────────────────────
-// 6. Animated route arc (GNN result)
-// ─────────────────────────────────────────────────────
 let animArc = null, animProgress = 0;
+const bead = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10), new THREE.MeshBasicMaterial({ color: 0x00ffa0 }));
+bead.visible = false;
+scene.add(bead);
 
 function drawActiveRoute(fromId, toId) {
   if (activeArcMesh) { scene.remove(activeArcMesh); activeArcMesh = null; }
-
   const p1 = hubPositions[fromId];
   const p2 = hubPositions[toId];
   if (!p1 || !p2) return;
@@ -465,171 +390,52 @@ function drawActiveRoute(fromId, toId) {
   activeArcMesh = new THREE.Line(geo, mat);
   scene.add(activeArcMesh);
 
-  // Animate a glowing bead along the arc
   animArc = pts;
   animProgress = 0;
 }
 
-const bead = new THREE.Mesh(
-  new THREE.SphereGeometry(0.08, 10, 10),
-  new THREE.MeshBasicMaterial({ color: 0x00ffa0 })
-);
-bead.visible = false;
-scene.add(bead);
-
-// ─────────────────────────────────────────────────────
-// 7. Hub panel (sidebar)
-// ─────────────────────────────────────────────────────
+// Side Panel UI functions
 function renderHubList() {
   const container = document.getElementById('hub-list');
-  container.innerHTML = '';
-  Object.entries(HUBS).forEach(([id, hub]) => {
-    const congPct  = (hub.cong * 100).toFixed(0);
-    const loadPct  = (hub.load * 100).toFixed(0);
-    const div = document.createElement('div');
-    div.className = 'hub-card';
-    div.id = `hub-card-${id}`;
-    div.innerHTML = `
+  container.innerHTML = Object.entries(HUBS).map(([id, hub]) => `
+    <div class="hub-card" id="hub-card-${id}" onclick="focusHub('${id}')">
       <div class="hub-name">${hub.name}</div>
       <div class="hub-stats">
-        <span class="stat-badge load">Load ${loadPct}%</span>
-        <span class="stat-badge cong">Cong ${congPct}%</span>
+        <span class="stat-badge load">Load ${(hub.load * 100).toFixed(0)}%</span>
+        <span class="stat-badge cong" style="background:${"#"+congestionColor(hub.cong).getHexString()}33; color:${"#"+congestionColor(hub.cong).getHexString()}">Cong ${(hub.cong * 100).toFixed(0)}%</span>
         <span class="stat-badge conn">Links ${hub.conn}</span>
-      </div>`;
-    div.onclick = () => focusHub(id);
-    container.appendChild(div);
-  });
+      </div>
+    </div>`).join('');
+  localStorage.setItem('rls_hubs_cache', JSON.stringify(HUBS));
 }
 
-function focusHub(id) {
+function loadHubCache() {
+  const cache = localStorage.getItem('rls_hubs_cache');
+  if (cache) {
+    const data = JSON.parse(cache);
+    Object.assign(HUBS, data);
+    renderHubList();
+  }
+}
+
+window.focusHub = function(id) {
   document.querySelectorAll('.hub-card').forEach(c => c.classList.remove('active'));
-  document.getElementById(`hub-card-${id}`)?.classList.add('active');
+  const card = document.getElementById(`hub-card-${id}`);
+  if(card) card.classList.add('active');
   const hub = HUBS[id];
-  const pos  = hubPositions[id];
-  // Pan camera toward hub
-  controls.target.lerp(pos, 0.6);
+  controls.target.lerp(hubPositions[id], 0.6);
   controls.update();
-  showTooltip(id, hub);
-  addLog(`🔍 Inspecting ${hub.name}`);
-}
 
-// Tooltip
-const tooltip = document.getElementById('hub-tooltip');
-function showTooltip(id, hub) {
+  const tt = document.getElementById('hub-tooltip');
   document.getElementById('tt-name').textContent = hub.name;
   document.getElementById('tt-load').textContent = (hub.load * 100).toFixed(0) + '%';
   document.getElementById('tt-cong').textContent = (hub.cong * 100).toFixed(0) + '%';
-  document.getElementById('tt-conn').textContent = hub.conn + ' connections';
-  tooltip.style.display = 'block';
-  tooltip.style.left = '330px';
-  tooltip.style.top  = '120px';
+  tt.style.display = 'block';
+  tt.style.left = '330px';
+  tt.style.top  = '120px';
+  addLog(`🔍 Inspecting ${hub.name}`);
 }
 
-// ─────────────────────────────────────────────────────
-// 8. Route dispatcher (calls Rust API if running, else simulates)
-// ─────────────────────────────────────────────────────
-window.dispatchRoute = async function() {
-  const from = document.getElementById('from-hub').value;
-  const to   = document.getElementById('to-hub').value;
-  if (from === to) { addLog('⚠️ Select different hubs'); return; }
-
-  addLog(`⟳ Computing Autonomous GNN path: ${from} → ${to}...`);
-
-  // Force simulation for stable client demo
-  const fromHub = HUBS[from], toHub = HUBS[to];
-  const baseCost = Math.abs(fromHub.lat - toHub.lat) * 40 + Math.abs(fromHub.lon - toHub.lon) * 40;
-  const adjustment = ((fromHub.cong + toHub.cong) / 2);
-  
-  const data = {
-    path: { from: fromHub.name, to: toHub.name, total_cost: parseInt(baseCost) },
-    adjusted_cost: parseFloat((baseCost * (1 + adjustment)).toFixed(1)),
-    gnn_adjustment: parseFloat(adjustment.toFixed(3)),
-    confidence: parseInt((1 - adjustment) * 100),
-  };
-
-  // Simulate thinking time for "AI feel"
-  await new Promise(r => setTimeout(r, 800));
-
-  // Show result panel
-  document.getElementById('res-route').textContent = `${data.path.from.split(' ')[0]} → ${data.path.to.split(' ')[0]}`;
-  document.getElementById('res-cost').textContent  = data.adjusted_cost.toFixed(1) + ' km-equiv';
-  document.getElementById('res-conf').textContent  = data.confidence + '%';
-  document.getElementById('res-adj').textContent   = '+' + (data.gnn_adjustment * 100).toFixed(1) + '%';
-  document.getElementById('route-result').style.display = 'block';
-
-  addLog(`✅ Autonomous Result: confidence ${data.confidence}% | cost optimized.`);
-  drawActiveRoute(from, to, data.points);
-};
-
-// ── Vehicle Animation Logic ──────────────────────────────────────────────
-async function drawActiveRoute(from, to, points) {
-  // Mock points if not provided
-  const path = points || generatePathPoints(from, to);
-  
-  // Create animated vehicle
-  const vehicle = createVehicleMarker();
-  scene.add(vehicle);
-  
-  const log = document.getElementById('log-content');
-  const logPanel = document.getElementById('execution-log');
-  logPanel.style.display = 'flex';
-  log.innerHTML = '';
-
-  for (let i = 0; i < path.length; i++) {
-    const p = path[i];
-    vehicle.position.set(p.x, p.y, p.z);
-    vehicle.lookAt(0,0,0); // Orient to surface
-    
-    // Update log
-    const ping = `[${new Date().toLocaleTimeString()}] ${from.hub_id.slice(0,3)}-${Math.floor(Math.random()*999)} @ ${p.lat.toFixed(2)},${p.lon.toFixed(2)} | 72kmh`;
-    const line = document.createElement('div');
-    line.textContent = ping;
-    log.prepend(line);
-    
-    await new Promise(r => setTimeout(r, 150));
-  }
-  
-  setTimeout(() => { 
-    scene.remove(vehicle); 
-    logPanel.style.display = 'none';
-  }, 2000);
-}
-
-function createVehicleMarker() {
-  const geo = new THREE.BoxGeometry(0.04, 0.04, 0.08);
-  const mat = new THREE.MeshPhongMaterial({ color: 0x00ff9d, emissive: 0x00ff9d, emissiveIntensity: 0.5 });
-  return new THREE.Mesh(geo, mat);
-}
-
-function generatePathPoints(from, to) {
-  // Simple linear interpolation on sphere for demo
-  const pts = [];
-  const start = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - from.lat) * Math.PI / 180, (from.lon + 180) * Math.PI / 180);
-  const end = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - to.lat) * Math.PI / 180, (to.lon + 180) * Math.PI / 180);
-  
-  for (let i = 0; i <= 20; i++) {
-    const p = new THREE.Vector3().lerpVectors(start, end, i/20).normalize().multiplyScalar(2.05);
-    pts.push({ x: p.x, y: p.y, z: p.z, lat: from.lat + (to.lat-from.lat)*(i/20), lon: from.lon + (to.lon-from.lon)*(i/20) });
-  }
-  return pts;
-}
-
-window.showServerAlert = function() {
-  const overlay = document.createElement('div');
-  overlay.style = "position:fixed; inset:0; background:rgba(4,8,15,0.85); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:9000; font-family:'Inter', sans-serif;";
-  overlay.innerHTML = `
-    <div style="background:#080e1c; border:1px solid #00c8ff; padding:32px; border-radius:16px; max-width:400px; text-align:center; box-shadow:0 0 50px rgba(0,200,255,0.2);">
-      <div style="font-family:'Orbitron'; color:#00c8ff; font-size:1.2rem; margin-bottom:16px;">PRODUCTION SERVER REQUIRED</div>
-      <p style="color:#d8eeff; font-size:0.9rem; line-height:1.5; margin-bottom:24px;">This feature is running in <b>Autonomous Neural Simulation</b> mode. To ingest real-time fleet telemetry and live hub data, please connect to the RLS Production Server.</p>
-      <button onclick="this.parentElement.parentElement.remove()" style="background:#00c8ff; color:#04080f; border:none; padding:10px 24px; border-radius:8px; font-weight:700; cursor:pointer;">DISMISS</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-};
-
-// ─────────────────────────────────────────────────────
-// 9. Activity log
-// ─────────────────────────────────────────────────────
 function addLog(msg) {
   const log = document.getElementById('activity-log');
   const now = new Date().toLocaleTimeString('en-ZA', { hour12: false });
@@ -640,12 +446,35 @@ function addLog(msg) {
   if (log.children.length > 30) log.lastChild.remove();
 }
 
-// ─────────────────────────────────────────────────────
-// 10. Raycaster for hub click
-// ─────────────────────────────────────────────────────
+window.dispatchRoute = async function() {
+  const from = document.getElementById('from-hub').value;
+  const to   = document.getElementById('to-hub').value;
+  if (from === to) { addLog('⚠️ Select different hubs'); return; }
+
+  addLog(`⟳ Computing Autonomous GNN path: ${from} → ${to}...`);
+
+  const fromHub = HUBS[from], toHub = HUBS[to];
+  const baseCost = Math.abs(fromHub.lat - toHub.lat) * 40 + Math.abs(fromHub.lon - toHub.lon) * 40;
+  const adjustment = ((fromHub.cong + toHub.cong) / 2);
+  
+  const cost = parseFloat((baseCost * (1 + adjustment)).toFixed(1));
+  const conf = parseInt((1 - adjustment) * 100);
+
+  await new Promise(r => setTimeout(r, 800)); // Simulate thinking
+  window.parent.postMessage({ type: 'dispatch_triggered', from, to }, '*');
+
+  document.getElementById('res-route').textContent = `${fromHub.name.split(' ')[0]} → ${toHub.name.split(' ')[0]}`;
+  document.getElementById('res-cost').textContent  = cost.toFixed(1) + ' km-e';
+  document.getElementById('res-conf').textContent  = conf + '%';
+  document.getElementById('res-adj').textContent   = '+' + (adjustment * 100).toFixed(1) + '%';
+  document.getElementById('route-result').style.display = 'block';
+
+  addLog(`✅ Autonomous Result: conf ${conf}% | route mapped.`);
+  drawActiveRoute(from, to);
+};
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
-
 canvas.addEventListener('click', (e) => {
   mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
   mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -654,21 +483,85 @@ canvas.addEventListener('click', (e) => {
   if (hits.length > 0) focusHub(hits[0].object.userData.id);
 });
 
-// ─────────────────────────────────────────────────────
-// 11. Animate
-// ─────────────────────────────────────────────────────
-const clock = new THREE.Clock();
+// Live Fleet Simulation Fetch
+const vehicleGroup = new THREE.Group();
+scene.add(vehicleGroup);
+let activeVehicles = {};
 
+async function fetchMockData() {
+  try {
+    const hRes = await fetch(`${API_BASE}/hubs`);
+    const hData = await hRes.json();
+    if(hData.success) {
+      hData.data.forEach(hh => {
+        if(HUBS[hh.hub_id]) {
+          HUBS[hh.hub_id].load = hh.load_factor;
+          HUBS[hh.hub_id].cong = hh.congestion_score;
+          const col = congestionColor(hh.congestion_score);
+          hubMeshes[hh.hub_id].material.color.copy(col);
+          hubMeshes[hh.hub_id].material.emissive.copy(col);
+        }
+      });
+      renderHubList();
+    }
+
+    const fRes = await fetch(`${API_BASE}/fleet`);
+    const fData = await fRes.json();
+    let currentVids = new Set();
+    fData.forEach(v => {
+      currentVids.add(v.vehicle_id);
+      if(!activeVehicles[v.vehicle_id]) {
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.06, 0.06, 0.12), 
+          new THREE.MeshBasicMaterial({ color: 0x00ff9d })
+        );
+        activeVehicles[v.vehicle_id] = { 
+          mesh, lat: v.latitude, lon: v.longitude, 
+          speed: v.speed_kmh, heading: v.heading_deg 
+        };
+        vehicleGroup.add(mesh);
+      }
+      const vObj = activeVehicles[v.vehicle_id];
+      vObj.lat_target = v.latitude;
+      vObj.lon_target = v.longitude;
+      vObj.speed = v.speed_kmh;
+      vObj.heading = v.heading_deg;
+    });
+
+    Object.keys(activeVehicles).forEach(k => {
+      if(!currentVids.has(k)) {
+        vehicleGroup.remove(activeVehicles[k].mesh);
+        delete activeVehicles[k];
+      }
+    });
+  } catch(e) {}
+}
+
+const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
 
-  // Pulse hub spheres
-  Object.values(hubMeshes).forEach(m => {
-    m.scale.setScalar(1 + 0.06 * Math.sin(t * 2 + m.position.x));
+  Object.values(hubMeshes).forEach(m => m.scale.setScalar(1 + 0.06 * Math.sin(t * 2 + m.position.x)));
+
+  Object.values(activeVehicles).forEach(v => {
+    // Predictive Dead Reckoning: Keep moving even if pings are slow
+    const speedFactor = (v.speed / 36000) * 0.016; // rough deg per frame
+    const rad = v.heading * (Math.PI / 180);
+    v.lat += Math.cos(rad) * speedFactor;
+    v.lon += Math.sin(rad) * speedFactor;
+
+    // Smoothly interpolate toward last known target lat/lon
+    if (v.lat_target !== undefined) {
+      v.lat += (v.lat_target - v.lat) * 0.05;
+      v.lon += (v.lon_target - v.lon) * 0.05;
+    }
+
+    const pos = latLonToVec3(v.lat, v.lon, 5.08);
+    v.mesh.position.copy(pos);
+    v.mesh.lookAt(new THREE.Vector3().copy(pos).multiplyScalar(1.1));
   });
 
-  // Animate bead along active arc
   if (animArc) {
     bead.visible = true;
     animProgress = (animProgress + 0.004) % 1;
@@ -676,98 +569,25 @@ function animate() {
     bead.position.copy(animArc[idx]);
   }
 
-  // Slow auto-rotate when not interacting
-  if (!controls.isInteracting) {
-    scene.rotation.y += 0.0008;
-  }
+  if (!controls.isInteracting) scene.rotation.y += 0.0008;
 
   controls.update();
   renderer.render(scene, camera);
 }
 
-// ─────────────────────────────────────────────────────
-// 12. Init
-// ─────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+loadHubCache();
 renderHubList();
 addLog('🚀 Digital Twin initialised');
 addLog('🧠 GNN Routing Engine connected');
-  window.showServerAlert = function() {
-    const overlay = document.createElement('div');
-    overlay.style = "position:fixed; inset:0; background:rgba(4,8,15,0.85); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; z-index:9000; font-family:'Inter', sans-serif;";
-    overlay.innerHTML = `
-      <div style="background:#080e1c; border:1px solid #00c8ff; padding:32px; border-radius:16px; max-width:400px; text-align:center; box-shadow:0 0 50px rgba(0,200,255,0.2);">
-        <div style="font-family:'Orbitron'; color:#00c8ff; font-size:1.2rem; margin-bottom:16px;">PRODUCTION SERVER REQUIRED</div>
-        <p style="color:#d8eeff; font-size:0.9rem; line-height:1.5; margin-bottom:24px;">This feature is running in <b>Autonomous Neural Simulation</b> mode. To ingest real-time fleet telemetry and live hub data, please connect to the RLS Production Server.</p>
-        <button onclick="this.parentElement.parentElement.remove()" style="background:#00c8ff; color:#04080f; border:none; padding:10px 24px; border-radius:8px; font-weight:700; cursor:pointer;">DISMISS</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  };
-
-  // Vehicle Animation Logic
-  const vehicleGroup = new THREE.Group();
-  scene.add(vehicleGroup);
-
-  async function animateVehicle(fromId, toId) {
-    const fromHub = hubs.find(h => h.id === fromId);
-    const toHub = hubs.find(h => h.id === toId);
-    if (!fromHub || !toHub) return;
-
-    const log = document.getElementById('log-content');
-    const logPanel = document.getElementById('execution-log');
-    logPanel.style.display = 'flex';
-    log.innerHTML = '';
-
-    const geo = new THREE.BoxGeometry(0.04, 0.04, 0.08);
-    const mat = new THREE.MeshPhongMaterial({ color: 0x00ff9d, emissive: 0x00ff9d, emissiveIntensity: 0.5 });
-    const vehicle = new THREE.Mesh(geo, mat);
-    vehicleGroup.add(vehicle);
-
-    const start = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - fromHub.lat) * Math.PI / 180, (fromHub.lon + 180) * Math.PI / 180);
-    const end = new THREE.Vector3().setFromSphericalCoords(2.02, (90 - toHub.lat) * Math.PI / 180, (toHub.lon + 180) * Math.PI / 180);
-
-    for (let i = 0; i <= 30; i++) {
-      const p = new THREE.Vector3().lerpVectors(start, end, i/30).normalize().multiplyScalar(2.05);
-      vehicle.position.copy(p);
-      vehicle.lookAt(0,0,0);
-      
-      const lat = fromHub.lat + (toHub.lat-fromHub.lat)*(i/30);
-      const lon = fromHub.lon + (toHub.lon-fromHub.lon)*(i/30);
-      const line = document.createElement('div');
-      line.textContent = `[P_PING] V-${Math.floor(Math.random()*9999)} @ ${lat.toFixed(2)},${lon.toFixed(2)} | 74km/h`;
-      log.prepend(line);
-      if (log.childNodes.length > 20) log.removeChild(log.lastChild);
-      
-      await new Promise(r => setTimeout(r, 60));
-    }
-
-    setTimeout(() => {
-      vehicleGroup.remove(vehicle);
-      logPanel.style.display = 'none';
-    }, 3000);
-  }
-
-  const originalDispatch = window.dispatchRoute;
-  window.dispatchRoute = async (f, t) => {
-    if (originalDispatch) await originalDispatch(f, t);
-    animateVehicle(f, t);
-  };
-
-  addLog('💾 Pinecone + TimescaleDB online');
-  animate();
+fetchMockData();
+setInterval(fetchMockData, 3000);
+animate();
 </script>
-  <!-- Execution Log -->
-  <div id="execution-log" style="position:fixed; bottom:24px; right:24px; width:300px; height:200px; background:rgba(4,8,15,0.85); border:1px solid rgba(0,200,255,0.2); border-radius:12px; padding:16px; backdrop-filter:blur(16px); display:none; flex-direction:column; gap:8px; z-index:1000; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
-    <div style="font-family:'Orbitron'; font-size:0.7rem; color:#00c8ff; border-bottom:1px solid rgba(0,200,255,0.1); padding-bottom:8px; margin-bottom:4px; letter-spacing:0.1em;">LIVE TELEMETRY STREAM</div>
-    <div id="log-content" style="flex:1; overflow-y:auto; font-size:0.65rem; color:#4a6a8a; font-family:monospace; line-height:1.5;"></div>
-  </div>
-
-<!-- Scripts consolidated into main module -->
 </body>
 </html>
