@@ -2,51 +2,65 @@
 # Deploy with: railway up
 # Docs: https://docs.railway.app
 
-services:
-  routing-engine:
-    source: ./routing-engine
-    build:
-      dockerfile: Dockerfile
-    deploy:
-      numReplicas: 1
-      sleepApplication: false
-    variables:
-      RUST_LOG: routing_engine=info
-      GNN_SIDECAR_URL: ${{ gnn-sidecar.RAILWAY_PRIVATE_URL }}
-    ports:
-      - target: 3000
+[services.routing-engine]
+source = "./routing-engine"
 
-  gnn-sidecar:
-    source: ./routing-engine
-    build:
-      dockerfile: Dockerfile.gnn
-    ports:
-      - target: 8000
+[services.routing-engine.build]
+dockerfile = "Dockerfile"
 
-  orchestration:
-    source: ./orchestration
-    build:
-      dockerfile: Dockerfile
-    variables:
-      ROUTING_ENGINE_URL: ${{ routing-engine.RAILWAY_PRIVATE_URL }}
-      TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
-      PINECONE_INDEX: rls-logistics-hubs
-      PINECONE_API_KEY: ${{ PINECONE_API_KEY }}
-    startCommand: uvicorn orchestrator:app --host 0.0.0.0 --port 8002
+[services.routing-engine.deploy]
+numReplicas = 1
+sleepApplication = false
 
-  dashboard:
-    source: ./dashboard
-    build:
-      dockerfile: Dockerfile
-    variables:
-      TIMESCALE_DSN: ${{ timescaledb.DATABASE_URL }}
-      ROUTING_ENGINE_URL: ${{ routing-engine.RAILWAY_PRIVATE_URL }}
-    ports:
-      - target: 8000
+[services.routing-engine.variables]
+RUST_LOG = "routing_engine=info"
+GNN_SIDECAR_URL = "${{ gnn-sidecar.RAILWAY_PRIVATE_URL }}"
 
-  digital-twin:
-    source: ./core-digital-twin
-    variables:
-      ROUTING_ENGINE_URL: https://${{ routing-engine.RAILWAY_PUBLIC_DOMAIN }}
-    ports:
-      - target: 80
+[[services.routing-engine.ports]]
+target = 3000
+
+[services.gnn-sidecar]
+source = "./routing-engine"
+
+[services.gnn-sidecar.build]
+dockerfile = "Dockerfile.gnn"
+
+[[services.gnn-sidecar.ports]]
+target = 8000
+
+[services.orchestration]
+source = "./orchestration"
+
+[services.orchestration.build]
+dockerfile = "Dockerfile"
+
+[services.orchestration.variables]
+ROUTING_ENGINE_URL = "${{ routing-engine.RAILWAY_PRIVATE_URL }}"
+TIMESCALE_DSN = "${{ timescaledb.DATABASE_URL }}"
+PINECONE_INDEX = "rls-logistics-hubs"
+PINECONE_API_KEY = "${{ PINECONE_API_KEY }}"
+
+[services.orchestration.deploy]
+startCommand = "uvicorn orchestrator:app --host 0.0.0.0 --port 8002"
+
+[services.dashboard]
+source = "./dashboard"
+
+[services.dashboard.build]
+dockerfile = "Dockerfile"
+
+[services.dashboard.variables]
+TIMESCALE_DSN = "${{ timescaledb.DATABASE_URL }}"
+ROUTING_ENGINE_URL = "${{ routing-engine.RAILWAY_PRIVATE_URL }}"
+
+[[services.dashboard.ports]]
+target = 8000
+
+[services.digital-twin]
+source = "./core-digital-twin"
+
+[services.digital-twin.variables]
+ROUTING_ENGINE_URL = "https://${{ routing-engine.RAILWAY_PUBLIC_DOMAIN }}"
+
+[[services.digital-twin.ports]]
+target = 80
