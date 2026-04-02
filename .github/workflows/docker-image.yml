@@ -7,12 +7,23 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build:
-
+  build-core-digital-twin:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+    - name: Build core-digital-twin image
+      run: docker build ./core-digital-twin --file ./core-digital-twin/Dockerfile --tag core-digital-twin:$(date +%s)
+
+  build-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dashboard image
+      run: docker build ./dashboard --file ./dashboard/Dockerfile --tag dashboard:$(date +%s)
+
+  build-orchestration:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build orchestration image
+      run: docker build ./orchestration --file ./orchestration/Dockerfile --tag orchestration:$(date +%s)
