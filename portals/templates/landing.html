@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS - Real Logistic Solutions</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e17; color: #e7e9ea; min-height: 100vh; overflow-x: hidden; }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(0, 150, 255, 0.1) 0%, transparent 70%);
+            animation: pulseBg 4s ease-in-out infinite;
+        }
+        @keyframes pulseBg {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(0, 200, 255, 0.6);
+            border-radius: 50%;
+            animation: float 15s infinite;
+            box-shadow: 0 0 10px rgba(0, 200, 255, 0.8);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* Main Container */
+        .main-container { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+
+        /* Welcome Bubble */
+        .welcome-bubble {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bubble-container {
+            display: inline-block;
+            position: relative;
+            padding: 40px 80px;
+            background: radial-gradient(ellipse at center, rgba(0, 150, 255, 0.3) 0%, rgba(0, 100, 200, 0.1) 50%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .bubble-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 200, 255, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: bubblePulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes bubblePulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.4; }
+        }
+
+        .welcome-text {
+            font-size: 52px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff 0%, #00ffaa 25%, #00d4ff 50%, #0099ff 75%, #00d4ff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: holoShine 3s linear infinite;
+            text-shadow: none;
+            position: relative;
+            z-index: 2;
+            filter: drop-shadow(0 0 30px rgba(0, 200, 255, 0.8)) drop-shadow(0 0 60px rgba(0, 150, 255, 0.5));
+        }
+        @keyframes holoShine {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .welcome-sub {
+            font-size: 24px;
+            color: #00d4ff;
+            margin-top: 15px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            opacity: 0.9;
+            text-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
+        }
+
+        /* Lightning Effects */
+        .lightning {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .lightning::before, .lightning::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 40%, rgba(0, 200, 255, 0.3) 50%, transparent 60%);
+            transform: translate(-50%, -50%);
+            animation: lightningFlash 4s linear infinite;
+        }
+        @keyframes lightningFlash {
+            0%, 100% { opacity: 0; }
+            10% { opacity: 0.5; }
+            11% { opacity: 0; }
+            15% { opacity: 0.8; }
+            16% { opacity: 0; }
+        }
+
+        /* Portal Login Buttons */
+        .portal-buttons {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 60px;
+            animation: fadeInUp 1s ease-out 0.3s backwards;
+        }
+        .portal-btn {
+            width: 200px;
+            padding: 30px 20px;
+            background: linear-gradient(145deg, rgba(20, 30, 50, 0.9), rgba(10, 15, 30, 0.95));
+            border: 2px solid #00d4ff;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .portal-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        .portal-btn:hover::before {
+            left: 100%;
+        }
+        .portal-btn:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 200, 255, 0.3), 0 0 30px rgba(0, 200, 255, 0.2);
+            border-color: #00ffaa;
+        }
+        .portal-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .portal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .portal-desc {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .portal-btn.main { border-color: #00ffaa; }
+        .portal-btn.main:hover { box-shadow: 0 20px 40px rgba(0, 255, 170, 0.3); }
+        .portal-btn.drivers { border-color: #ff9800; }
+        .portal-btn.drivers:hover { box-shadow: 0 20px 40px rgba(255, 152, 0, 0.3); }
+        .portal-btn.handlers { border-color: #2196f3; }
+        .portal-btn.handlers:hover { box-shadow: 0 20px 40px rgba(33, 150, 243, 0.3); }
+
+        /* How to Use Section */
+        .how-to-section {
+            width: 100%;
+            max-width: 1200px;
+            animation: fadeInUp 1s ease-out 0.6s backwards;
+        }
+        .section-title {
+            font-size: 32px;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .section-title span {
+            color: #00d4ff;
+        }
+
+        .how-to-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+        }
+        .how-to-card {
+            background: linear-gradient(145deg, rgba(20, 30, 50, 0.95), rgba(10, 15, 30, 0.98));
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        .how-to-card:hover {
+            border-color: #00d4ff;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 200, 255, 0.2);
+        }
+        .how-to-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #00d4ff, #0099ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 20px;
+        }
+        .how-to-card h3 {
+            font-size: 20px;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+        .how-to-card p {
+            font-size: 14px;
+            color: #8b949e;
+            line-height: 1.7;
+            margin-bottom: 15px;
+        }
+        .how-to-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .how-to-card li {
+            font-size: 13px;
+            color: #00ffaa;
+            padding: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .how-to-card li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #00ffaa;
+        }
+
+        /* Automation Workflow Section */
+        .automation-section {
+            margin-top: 60px;
+            background: linear-gradient(145deg, rgba(0, 100, 60, 0.3), rgba(0, 50, 30, 0.3));
+            border: 2px solid #00ffaa;
+            border-radius: 30px;
+            padding: 50px;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .automation-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .automation-header h2 {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+        .automation-header p {
+            font-size: 16px;
+            color: #8b949e;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .workflow-step {
+            flex: 1;
+            min-width: 150px;
+            text-align: center;
+            padding: 25px 15px;
+            background: rgba(0, 200, 255, 0.1);
+            border-radius: 15px;
+            border: 1px solid rgba(0, 200, 255, 0.3);
+        }
+        .workflow-step-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        .workflow-step h4 {
+            font-size: 16px;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .workflow-step p {
+            font-size: 12px;
+            color: #8b949e;
+        }
+        .workflow-arrow {
+            font-size: 30px;
+            color: #00d4ff;
+        }
+
+        /* Start Automation Button */
+        .start-automation {
+            text-align: center;
+            margin-top: 50px;
+        }
+        .auto-btn {
+            padding: 20px 60px;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ffaa 0%, #00d4ff 100%);
+            border: none;
+            border-radius: 50px;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .auto-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 40px rgba(0, 255, 170, 0.5);
+        }
+
+        /* Login Modal */
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-modal.show { display: flex; }
+        .login-box {
+            background: linear-gradient(145deg, #161b22, #0d1117);
+            border: 2px solid #00d4ff;
+            border-radius: 30px;
+            padding: 50px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+        .login-box h2 {
+            font-size: 28px;
+            color: #fff;
+            margin-bottom: 30px;
+        }
+        .login-input {
+            width: 100%;
+            padding: 18px 20px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .login-input:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #00d4ff, #00ffaa);
+            border: none;
+            border-radius: 12px;
+            color: #000;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 200, 255, 0.4);
+        }
+        .login-close {
+            background: transparent;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Skip Button */
+        .skip-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            background: rgba(0, 200, 255, 0.2);
+            border: 1px solid #00d4ff;
+            border-radius: 30px;
+            color: #00d4ff;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        .skip-btn:hover {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .home-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 30px;
+            padding: 15px 30px;
+            background: rgba(0, 255, 170, 0.2);
+            border: 1px solid #00ffaa;
+            border-radius: 30px;
+            color: #00ffaa;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        .home-btn:hover {
+            background: #00ffaa;
+            color: #000;
+        }
+
+        @media (max-width: 1000px) {
+            .how-to-grid { grid-template-columns: 1fr; }
+            .workflow-steps { flex-direction: column; }
+            .workflow-arrow { transform: rotate(90deg); }
+            .portal-buttons { flex-direction: column; }
+            .welcome-text { font-size: 36px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 20%; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 30%; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 40%; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 50%; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 60%; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 70%; animation-delay: 2.5s;"></div>
+        <div class="particle" style="left: 80%; animation-delay: 1.5s;"></div>
+        <div class="particle" style="left: 90%; animation-delay: 3.5s;"></div>
+    </div>
+
+    <div class="main-container">
+        <!-- Welcome Bubble -->
+        <div class="welcome-bubble">
+            <div class="bubble-container">
+                <div class="lightning"></div>
+                <div class="bubble-glow"></div>
+                <div class="welcome-text">Welcome to Real Logistic Solutions</div>
+                <div class="welcome-sub">Global Neural Network</div>
+            </div>
+        </div>
+
+        <!-- Portal Login Buttons -->
+        <div class="portal-buttons">
+            <div class="portal-btn main" onclick="openLogin('main')">
+                <div class="portal-icon">🖥️</div>
+                <div class="portal-title">Main Dashboard</div>
+                <div class="portal-desc">Control Center & AI</div>
+            </div>
+            <div class="portal-btn drivers" onclick="openLogin('drivers')">
+                <div class="portal-icon">🚛</div>
+                <div class="portal-title">Drivers Portal</div>
+                <div class="portal-desc">Route & Delivery</div>
+            </div>
+            <div class="portal-btn handlers" onclick="openLogin('handlers')">
+                <div class="portal-icon">📦</div>
+                <div class="portal-title">Handlers Portal</div>
+                <div class="portal-desc">Warehouse & Inventory</div>
+            </div>
+        </div>
+
+        <!-- How to Use Section -->
+        <div class="how-to-section">
+            <h2 class="section-title">How to Use <span>RLS System</span></h2>
+            
+            <div class="how-to-grid">
+                <div class="how-to-card">
+                    <div class="how-to-number">1</div>
+                    <h3>🔌 Connect Your Systems</h3>
+                    <p>Integrate your company API and server to enable GNN training.</p>
+                    <ul>
+                        <li>Enter your API endpoint URL</li>
+                        <li>Add your server address</li>
+                        <li>Configure database connection</li>
+                        <li>Test the connection</li>
+                    </ul>
+                </div>
+
+                <div class="how-to-card">
+                    <div class="how-to-number">2</div>
+                    <h3>🧠 Train the GNN</h3>
+                    <p>Let the AI learn from your historical data to automate workflows.</p>
+                    <ul>
+                        <li>Select training data period</li>
+                        <li>Choose automation focus area</li>
+                        <li>Start GNN training</li>
+                        <li>Monitor training progress</li>
+                    </ul>
+                </div>
+
+                <div class="how-to-card">
+                    <div class="how-to-number">3</div>
+                    <h3>📍 Track Your Fleet</h3>
+                    <p>Real-time GPS tracking of all vehicles across South Africa.</p>
+                    <ul>
+                        <li>View live vehicle locations</li>
+                        <li>Monitor driver status</li>
+                        <li>Track delivery progress</li>
+                        <li>Get ETA updates</li>
+                    </ul>
+                </div>
+
+                <div class="how-to-card">
+                    <div class="how-to-number">4</div>
+                    <h3>📋 Manage Jobs</h3>
+                    <p>Handlers can assign, reassign, and optimize deliveries.</p>
+                    <ul>
+                        <li>Select vehicle on map</li>
+                        <li>Reassign to another driver</li>
+                        <li>Reroute for efficiency</li>
+                        <li>Set priority levels</li>
+                    </ul>
+                </div>
+
+                <div class="how-to-card">
+                    <div class="how-to-number">5</div>
+                    <h3>✅ Driver Actions</h3>
+                    <p>Drivers accept jobs and navigate to deliveries easily.</p>
+                    <ul>
+                        <li>Accept or decline jobs</li>
+                        <li>Get directions to pickup</li>
+                        <li>Navigate to delivery</li>
+                        <li>Mark jobs complete</li>
+                    </ul>
+                </div>
+
+                <div class="how-to-card">
+                    <div class="how-to-number">6</div>
+                    <h3>📊 Monitor & Automate</h3>
+                    <p>AI handles repetitive tasks and optimizes operations.</p>
+                    <ul>
+                        <li>View system recommendations</li>
+                        <li>Monitor KPIs and stats</li>
+                        <li>Track on-time delivery rate</li>
+                        <li>Review GNN performance</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Automation Workflow Section -->
+        <div class="automation-section">
+            <div class="automation-header">
+                <h2>⚡ Activate Automation Workflow</h2>
+                <p>Follow these steps to enable AI-powered automation for your logistics operations</p>
+            </div>
+
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="workflow-step-icon">🔗</div>
+                    <h4>Connect</h4>
+                    <p>Link your API & Server</p>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="workflow-step-icon">📊</div>
+                    <h4>Import Data</h4>
+                    <p>Upload historical data</p>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="workflow-step-icon">🧠</div>
+                    <h4>Train GNN</h4>
+                    <p>AI learns patterns</p>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="workflow-step-icon">⚙️</div>
+                    <h4>Configure</h4>
+                    <p>Set automation rules</p>
+                </div>
+                <div class="workflow-arrow">→</div>
+                <div class="workflow-step">
+                    <div class="workflow-step-icon">🚀</div>
+                    <h4>Activate</h4>
+                    <p>Go live!</p>
+                </div>
+            </div>
+
+            <div class="start-automation">
+                <button class="auto-btn" onclick="startAutomation()">🚀 Start Automation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="login-modal" id="loginModal">
+        <div class="login-box">
+            <h2 id="loginTitle">Login to Portal</h2>
+            <input type="text" class="login-input" placeholder="Username" id="loginUser">
+            <input type="password" class="login-input" placeholder="Password" id="loginPass">
+            <button class="login-btn" onclick="doLogin()">Login</button>
+            <button class="login-close" onclick="closeLogin()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Skip Button -->
+    <a href="/dashboard" class="skip-btn">Go to Dashboard →</a>
+    <a href="/" class="home-btn">🏠 Home</a>
+
+    <script>
+        let currentPortal = '';
+
+        function openLogin(portal) {
+            currentPortal = portal;
+            const titles = {
+                'main': 'Login to Main Dashboard',
+                'drivers': 'Login to Drivers Portal',
+                'handlers': 'Login to Handlers Portal'
+            };
+            document.getElementById('loginTitle').textContent = titles[portal];
+            document.getElementById('loginModal').classList.add('show');
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').classList.remove('show');
+        }
+
+        function doLogin() {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            
+            if (!user || !pass) {
+                alert('Please enter username and password');
+                return;
+            }
+            
+            // Demo login - in production, validate against server
+            const portals = {
+                'main': '/',
+                'drivers': '/drivers',
+                'handlers': '/handlers'
+            };
+            
+            closeLogin();
+            window.location.href = portals[currentPortal];
+        }
+
+        function skipToMain() {
+            window.location.href = '/dashboard';
+        }
+
+        function startAutomation() {
+            alert('🚀 Starting Automation Setup...\n\nIn production, this would:\n1. Validate API connection\n2. Import historical data\n3. Begin GNN training\n4. Configure automation rules');
+        }
+
+        // Allow Enter key to login
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') doLogin();
+        });
+    </script>
+</body>
+</html>
