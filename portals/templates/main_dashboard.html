@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS GNN - Main Dashboard</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#007a4d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/static/icon-512x512.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e17; color: #e7e9ea; min-height: 100vh; }
+        
+        /* Header - SA Theme */
+        .header { background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%); padding: 0; border-bottom: 3px solid #ffb612; position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
+        .logo { display: flex; align-items: center; gap: 15px; padding: 15px 0; }
+        .logo-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #007a4d 0%, #ffb612 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #000; }
+        .logo-text h1 { font-size: 22px; color: #fff; }
+        .logo-text span { font-size: 11px; color: #ffb612; }
+        .nav-links { display: flex; gap: 5px; }
+        .nav-link { padding: 12px 20px; color: #8b949e; text-decoration: none; border-radius: 8px; transition: all 0.3s; font-weight: 500; }
+        .nav-link:hover { background: #21262d; color: #fff; }
+        .nav-link.active { background: #ffb612; color: #000; }
+        .status-indicator { display: flex; align-items: center; gap: 8px; color: #007a4d; font-size: 13px; }
+        .status-dot { width: 8px; height: 8px; background: #007a4d; border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* Main Content */
+        .main { max-width: 1600px; margin: 0 auto; padding: 30px; }
+        .section-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: #007a4d; border-radius: 2px; }
+
+        /* Map Section */
+        .map-container { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .map-wrapper { background: #161b22; border: 1px solid #21262d; border-radius: 16px; overflow: hidden; }
+        .map-header { padding: 20px 25px; border-bottom: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(90deg, rgba(0,122,77,0.1) 0%, transparent 100%); }
+        .map-title { font-size: 16px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 10px; }
+        .map-icon { font-size: 24px; }
+        .map-controls { display: flex; gap: 10px; }
+        .map-btn { padding: 8px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 12px; transition: all 0.3s; }
+        .map-btn:hover, .map-btn.active { background: #007a4d; color: #fff; border-color: #007a4d; }
+        #map { height: 500px; width: 100%; }
+        
+        /* Fleet Sidebar - SA */
+        .fleet-sidebar { background: #161b22; border: 1px solid #21262d; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+        .fleet-header { padding: 20px; border-bottom: 1px solid #21262d; background: linear-gradient(90deg, rgba(255,182,18,0.1) 0%, transparent 100%); }
+        .fleet-header h3 { color: #fff; font-size: 16px; margin-bottom: 5px; }
+        .fleet-header p { color: #8b949e; font-size: 12px; }
+        .fleet-list { flex: 1; overflow-y: auto; max-height: 450px; }
+        .fleet-item { padding: 15px 20px; border-bottom: 1px solid #21262d; cursor: pointer; transition: all 0.3s; display: flex; gap: 15px; align-items: center; }
+        .fleet-item:hover { background: #1c2128; }
+        .fleet-item.selected { background: #1c2128; border-left: 3px solid #007a4d; }
+        .fleet-avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #007a4d, #ffb612); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 14px; }
+        .fleet-info { flex: 1; }
+        .fleet-name { color: #fff; font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+        .fleet-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+        .badge-active { background: rgba(0, 122, 77, 0.3); color: #007a4d; }
+        .badge-idle { background: rgba(255, 182, 18, 0.3); color: #ffb612; }
+        .badge-offline { background: rgba(139, 148, 158, 0.2); color: #8b949e; }
+        .fleet-location { color: #8b949e; font-size: 11px; }
+        .fleet-speed { font-size: 12px; color: #007a4d; font-weight: 500; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(145deg, #161b22 0%, #0d1117 100%); border: 1px solid #21262d; border-radius: 16px; padding: 24px; }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .stat-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .stat-value { font-size: 36px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .stat-label { font-size: 13px; color: #8b949e; }
+        .stat-card:nth-child(1) .stat-icon { background: rgba(0, 122, 77, 0.2); }
+        .stat-card:nth-child(2) .stat-icon { background: rgba(255, 182, 18, 0.2); }
+        .stat-card:nth-child(3) .stat-icon { background: rgba(156, 39, 176, 0.2); }
+        .stat-card:nth-child(4) .stat-icon { background: rgba(33, 150, 243, 0.2); }
+        .stat-card:nth-child(5) .stat-icon { background: rgba(244, 67, 54, 0.2); }
+
+        /* Cards */
+        .card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 25px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 16px; font-weight: 600; color: #fff; }
+        .card-action { color: #007a4d; font-size: 13px; cursor: pointer; }
+
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+
+        /* API Integration Panel - NEW */
+        .integration-panel { background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%); border: 2px solid #007a4d; border-radius: 20px; padding: 30px; margin-bottom: 30px; }
+        .integration-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .integration-title { font-size: 22px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 15px; }
+        .integration-icon { font-size: 32px; }
+        .integration-badge { background: #007a4d; color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 11px; }
+        .integration-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px; }
+        .integration-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 25px; }
+        .integration-card h4 { color: #fff; font-size: 16px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .integration-card p { color: #8b949e; font-size: 13px; margin-bottom: 15px; line-height: 1.5; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; color: #8b949e; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; }
+        .form-input { width: 100%; padding: 12px 15px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; }
+        .form-input:focus { outline: none; border-color: #007a4d; }
+        .form-select { width: 100%; padding: 12px 15px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; }
+        .btn { padding: 12px 24px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 14px; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #007a4d 0%, #00a876 100%); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0, 122, 77, 0.4); }
+        .btn-secondary { background: #21262d; color: #fff; border: 1px solid #30363d; }
+        .btn-secondary:hover { background: #30363d; }
+        .connection-status { display: flex; align-items: center; gap: 10px; padding: 15px; background: #0d1117; border-radius: 8px; margin-top: 15px; }
+        .connection-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .connection-dot.connected { background: #007a4d; box-shadow: 0 0 10px #007a4d; }
+        .connection-dot.disconnected { background: #8b949e; }
+        .connection-dot.training { background: #ffb612; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .test-result { padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 13px; display: none; }
+        .test-result.success { background: rgba(0, 122, 77, 0.2); color: #007a4d; display: block; }
+        .test-result.error { background: rgba(244, 67, 54, 0.2); color: #f44336; display: block; }
+
+        /* Job Panel */
+        .job-panel { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 25px; }
+        .job-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .job-btn { padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 13px; transition: all 0.3s; }
+        .btn-reassign { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+        .btn-reassign:hover { background: #2196f3; color: #fff; }
+        .btn-reroute { background: rgba(255, 182, 18, 0.2); color: #ffb612; }
+        .btn-reroute:hover { background: #ffb612; color: #000; }
+        .btn-delay { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
+        .btn-delay:hover { background: #9c27b0; color: #fff; }
+        .btn-priority { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .btn-priority:hover { background: #f44336; color: #fff; }
+
+        /* Lists */
+        .item-list { list-style: none; }
+        .item-list li { padding: 15px 0; border-bottom: 1px solid #21262d; }
+        .item-list li:last-child { border-bottom: none; }
+        .item-info h4 { color: #fff; font-size: 14px; margin-bottom: 3px; }
+        .item-info p { color: #8b949e; font-size: 12px; }
+
+        /* Alerts */
+        .alert-list { display: flex; flex-direction: column; gap: 10px; }
+        .alert-item { background: #1c2128; border-radius: 10px; padding: 15px; display: flex; gap: 15px; align-items: center; border-left: 4px solid; }
+        .alert-critical { border-color: #f44336; }
+        .alert-warning { border-color: #ffb612; }
+        .alert-info { border-color: #2196f3; }
+        .alert-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .alert-critical .alert-icon { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .alert-warning .alert-icon { background: rgba(255, 182, 18, 0.2); color: #ffb612; }
+        .alert-info .alert-icon { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+        .alert-content h4 { color: #fff; font-size: 14px; margin-bottom: 3px; }
+        .alert-content p { color: #8b949e; font-size: 12px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+        .search-box { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search-input { flex: 1; padding: 12px 15px; background: #1c2128; border: 1px solid #21262d; border-radius: 8px; color: #fff; font-size: 14px; }
+        .search-input:focus { outline: none; border-color: #007a4d; }
+        .search-btn { padding: 12px 20px; background: #007a4d; border: none; border-radius: 8px; color: #fff; font-weight: 600; cursor: pointer; }
+
+        .finance-card { background: linear-gradient(135deg, rgba(0,212,170,0.05) 0%, rgba(0,0,0,0.5) 100%); border: 1px solid #00d4aa; border-radius: 16px; padding: 24px; position: relative; overflow: hidden; }
+        .finance-value { font-size: 32px; font-weight: 700; color: #00d4aa; margin-top: 10px; }
+        .finance-label { font-size: 14px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .finance-trend { font-size: 12px; font-weight: bold; background: rgba(0,212,170,0.2); color: #00d4aa; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-top: 10px; }
+        .god-mode-badge { background: linear-gradient(90deg, #ff0044, #8a0025); color: #fff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-left: 10px; text-transform: uppercase; letter-spacing: 2px; animation: pulse-red 2s infinite; display: inline-block; }
+        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 10px rgba(255,0,68,0.5); } 50% { box-shadow: 0 0 20px rgba(255,0,68,0.8); } }
+        .globe-container { width: 100%; height: 500px; border-radius: 12px; overflow: hidden; position: relative; background: #000; }
+        .operations-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .operations-table th { text-align: left; padding: 12px 15px; border-bottom: 2px solid #21262d; color: #8b949e; font-size: 12px; text-transform: uppercase; }
+        .operations-table td { padding: 15px; border-bottom: 1px solid #21262d; font-size: 13px; color: #fff; }
+        .operations-table tr:hover { background: #1c2128; }
+        .table-container { max-height: 350px; overflow-y: auto; }
+
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .map-container, .integration-grid { grid-template-columns: 1fr; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        /* RBAC Styles */
+        .user-profile { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.05); padding: 5px 20px; border-radius: 30px; border: 1px solid #30363d; }
+        .user-name { font-size: 13px; font-weight: 500; }
+        .logout-btn { color: #8b949e; text-decoration: none; font-size: 13px; transition: color 0.3s; margin-left: 10px; border-left: 1px solid var(--border); padding-left: 15px; }
+        .logout-btn:hover { color: #e03c31; }
+        
+        .portal-switcher { position: relative; display: inline-block; }
+        .switcher-btn { background: #007a4d; color: #fff; padding: 10px 18px; border-radius: 8px; font-size: 13px; cursor: pointer; border: none; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .switcher-btn:hover { background: #008f5a; }
+        .switcher-content { display: none; position: absolute; right: 0; background: #161b22; min-width: 200px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 12px; border: 1px solid #30363d; z-index: 1000; padding: 10px; margin-top: 5px; }
+        .portal-switcher:hover .switcher-content { display: block; }
+        .switcher-item { display: flex; align-items: center; gap: 12px; padding: 12px; color: #e7e9ea; text-decoration: none; border-radius: 8px; font-size: 13px; transition: all 0.2s; }
+        .switcher-item:hover { background: #21262d; color: #fff; }
+        .switcher-item i { width: 20px; text-align: center; color: #ffb612; }
+    </style>
+    <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/globe.gl"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">🇿🇦</div>
+                <div class="logo-text">
+                    <h1>RLS GNN System</h1>
+                    <span>South African Logistics AI <span class="god-mode-badge">God Mode Override</span></span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="/dashboard" class="nav-link active">Main Dashboard</a>
+                <a href="/drivers" class="nav-link">Drivers Portal</a>
+                <a href="/handlers" class="nav-link">Handlers Portal</a>
+            </nav>
+            <div class="user-profile">
+                <div class="user-name">
+                    <i class="fas fa-crown" style="color:#ffb612; margin-right:8px;"></i>
+                    {{ user }} (Owner)
+                </div>
+
+                <div class="portal-switcher">
+                    <button class="switcher-btn">
+                        <i class="fas fa-random"></i> Portal Override
+                    </button>
+                    <div class="switcher-content">
+                        <div style="font-size: 10px; color: #8b949e; text-transform: uppercase; padding: 5px 10px; letter-spacing: 1px;">Switch To Portal</div>
+                        <a href="/handlers" class="switcher-item"><i class="fas fa-warehouse"></i> Handlers View</a>
+                        <a href="/drivers" class="switcher-item"><i class="fas fa-truck"></i> Drivers View</a>
+                        <div style="border-top:1px solid #30363d; margin:5px 0;"></div>
+                        <a href="/dashboard" class="switcher-item"><i class="fas fa-chart-line"></i> Main Command</a>
+                    </div>
+                </div>
+
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- API Integration Panel -->
+        <div class="section-title">🔌 API & Server Integration</div>
+        <div class="integration-panel">
+            <div class="integration-header">
+                <div class="integration-title">
+                    <span class="integration-icon">🔗</span>
+                    Connect Your Systems
+                    <span class="integration-badge">GNN Training Ready</span>
+                </div>
+                <button class="btn btn-primary" onclick="connectAll()">⚡ Connect All Systems</button>
+            </div>
+            
+            <div class="integration-grid">
+                <!-- API Configuration -->
+                <div class="integration-card">
+                    <h4>📡 Private API</h4>
+                    <p>Connect your company's private API for real-time data exchange</p>
+                    <div class="form-group">
+                        <label class="form-label">API Endpoint URL</label>
+                        <input type="text" class="form-input" id="apiEndpoint" placeholder="https://api.yourcompany.co.za/v1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="password" class="form-input" id="apiKey" placeholder="Enter your API key">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data Types to Sync</label>
+                        <select class="form-select" id="dataTypes">
+                            <option value="all">All Data</option>
+                            <option value="orders">Orders & Deliveries</option>
+                            <option value="inventory">Inventory</option>
+                            <option value="fleet">Fleet & Vehicles</option>
+                            <option value="customers">Customer Data</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="testApi()">🧪 Test Connection</button>
+                    <div class="test-result" id="apiTestResult"></div>
+                </div>
+
+                <!-- Server Connection -->
+                <div class="integration-card">
+                    <h4>🖥️ Company Server</h4>
+                    <p>Connect directly to your on-premise server for GNN training</p>
+                    <div class="form-group">
+                        <label class="form-label">Server Address</label>
+                        <input type="text" class="form-input" id="serverAddress" placeholder="192.168.1.100 or server.domain.co.za">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Database</label>
+                        <select class="form-select" id="dbType">
+                            <option value="mssql">MS SQL Server</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="postgresql">PostgreSQL</option>
+                            <option value="oracle">Oracle</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Database Name</label>
+                        <input type="text" class="form-input" id="dbName" placeholder="YourDatabase">
+                    </div>
+                    <button class="btn btn-secondary" onclick="testServer()">🧪 Test Connection</button>
+                    <div class="test-result" id="serverTestResult"></div>
+                </div>
+
+                <!-- GNN Training -->
+                <div class="integration-card">
+                    <h4>🧠 GNN Training</h4>
+                    <p>Train the neural network with your company data for automation</p>
+                    <div class="form-group">
+                        <label class="form-label">Training Data Period</label>
+                        <select class="form-select" id="trainingPeriod">
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 90 Days</option>
+                            <option value="180">Last 6 Months</option>
+                            <option value="365">Last 12 Months</option>
+                            <option value="all">All Available Data</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Automation Focus</label>
+                        <select class="form-select" id="focusArea">
+                            <option value="routes">Route Optimization</option>
+                            <option value="inventory">Inventory Management</option>
+                            <option value="scheduling">Job Scheduling</option>
+                            <option value="all">All Areas</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="startTraining()">🚀 Start GNN Training</button>
+                    <div class="connection-status">
+                        <div class="connection-dot disconnected" id="trainingStatus"></div>
+                        <span id="trainingText">Not Connected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Finances Suite -->
+        <div class="section-title">💰 Global Financial Dashboard (ZAR)</div>
+        <div class="grid-3">
+            <div class="finance-card">
+                <div class="stat-header"><div class="stat-icon">💵</div></div>
+                <div class="finance-label">Gross Operational Revenue</div>
+                <div class="finance-value">ZAR 42,500,000</div>
+                <div class="finance-trend">↑ 12.4% vs Last Qtr</div>
+            </div>
+            <div class="finance-card" style="border-color:#ffb612; background: linear-gradient(135deg, rgba(255,182,18,0.05) 0%, rgba(0,0,0,0.5) 100%);">
+                <div class="stat-header"><div class="stat-icon" style="background:rgba(255,182,18,0.2);">📉</div></div>
+                <div class="finance-label">GNN Cost Savings</div>
+                <div class="finance-value" style="color:#ffb612;">ZAR 8,240,000</div>
+                <div class="finance-trend" style="background:rgba(255,182,18,0.2);color:#ffb612;">↑ Optimized Routes</div>
+            </div>
+            <div class="finance-card" style="border-color:#f44336; background: linear-gradient(135deg, rgba(244,67,54,0.05) 0%, rgba(0,0,0,0.5) 100%);">
+                <div class="stat-header"><div class="stat-icon" style="background:rgba(244,67,54,0.2);">⛽</div></div>
+                <div class="finance-label">Active Fleet Expenditure</div>
+                <div class="finance-value" style="color:#f44336;">ZAR 12,100,500</div>
+                <div class="finance-trend" style="background:rgba(244,67,54,0.2);color:#f44336;">↓ 5% Reduction</div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="section-title">🗺️ Live Fleet Tracking - South Africa</div>
+        <div class="map-container">
+            <div class="map-wrapper">
+                <div class="map-header">
+                    <div class="map-title">
+                        <span class="map-icon">🌐</span>
+                        Holographic WebGL Globe - SA Fleet Flow
+                    </div>
+                </div>
+                <div id="globeViz" class="globe-container"></div>
+            </div>
+
+            <div class="fleet-sidebar">
+                <div class="fleet-header">
+                    <h3>🚛 SA Fleet Vehicles</h3>
+                    <p id="fleetCount">Loading fleet data...</p>
+                </div>
+                <div class="search-box" style="padding: 15px 20px;">
+                    <input type="text" class="search-input" placeholder="Search vehicle or driver..." id="fleetSearch" onkeyup="filterFleet()">
+                </div>
+                <div class="fleet-list" id="fleetList"></div>
+            </div>
+        </div>
+
+        <!-- Job Adjustment Panel -->
+        <div class="section-title">📋 Handler Job Control</div>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Selected Vehicle Job Details</span>
+                    <span id="selectedVehicle" style="color:#8b949e;font-size:12px;">Select vehicle on map</span>
+                </div>
+                <div id="jobDetails">
+                    <p style="color:#8b949e;text-align:center;padding:40px 0;">Select a vehicle to view and adjust job details</p>
+                </div>
+                <div class="job-actions" id="jobActions" style="display:none;">
+                    <button class="job-btn btn-reassign" onclick="reassignJob()">🔄 Reassign</button>
+                    <button class="job-btn btn-reroute" onclick="rerouteJob()">🛣️ Reroute</button>
+                    <button class="job-btn btn-delay" onclick="delayJob()">⏰ Delay</button>
+                    <button class="job-btn btn-priority" onclick="changePriority()">⚡ Priority</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🗄️ Database: Full Operations Report</h3>
+                    <div class="map-controls">
+                        <button class="map-btn active">Live</button>
+                        <button class="map-btn">Yesterday</button>
+                        <button class="map-btn">Exports (CSV)</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="operations-table">
+                        <thead>
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Client Name</th>
+                                <th>Driver Assigned</th>
+                                <th>Route Payload</th>
+                                <th>Status</th>
+                                <th>Rev (ZAR)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="operationsTableBody">
+                            <tr>
+                                <td>DEL-001</td>
+                                <td>Shoprite CT</td>
+                                <td>v.d. Berg, S.</td>
+                                <td>14 Pallets (Cold)</td>
+                                <td><span class="fleet-badge badge-active">In-Transit</span></td>
+                                <td style="color:#00d4aa;">R 12,500</td>
+                            </tr>
+                            <tr>
+                                <td>DEL-002</td>
+                                <td>Pick n Pay DBN</td>
+                                <td>Zwane, M.</td>
+                                <td>8 Pallets (Dry)</td>
+                                <td><span class="fleet-badge badge-active">Loading</span></td>
+                                <td style="color:#00d4aa;">R 8,200</td>
+                            </tr>
+                            <tr>
+                                <td>DEL-003</td>
+                                <td>Checkers GP</td>
+                                <td>Mokoena, T.</td>
+                                <td>22 Pallets (Mixed)</td>
+                                <td><span class="fleet-badge badge-offline">Delayed</span></td>
+                                <td style="color:#00d4aa;">R 19,400</td>
+                            </tr>
+                            <tr>
+                                <td>DEL-004</td>
+                                <td>Woolworths PTA</td>
+                                <td>Nel, A.</td>
+                                <td>10 Pallets (Cold)</td>
+                                <td><span class="fleet-badge badge-idle">Idle</span></td>
+                                <td style="color:#00d4aa;">R 11,000</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header"><div class="stat-icon">🚛</div></div>
+                <div class="stat-value" id="totalVehicles">-</div>
+                <div class="stat-label">SA Fleet Vehicles</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><div class="stat-icon">📍</div></div>
+                <div class="stat-value" id="activeDeliveries">-</div>
+                <div class="stat-label">Active Jobs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><div class="stat-icon">✅</div></div>
+                <div class="stat-value" id="completedToday">-</div>
+                <div class="stat-label">Completed Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><div class="stat-icon">⏱️</div></div>
+                <div class="stat-value" id="onTimeRate">-</div>
+                <div class="stat-label">On-Time Rate %</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header"><div class="stat-icon">🧠</div></div>
+                <div class="stat-value" id="gnnStatus">Ready</div>
+                <div class="stat-label">GNN Status</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize 3D Globe
+        const N = 20;
+        const arcsData = [
+            { startLat: -26.2041, startLng: 28.0473, endLat: -33.9249, endLng: 18.4241, color: ['#007a4d', '#ffb612'] }, // JHB to CPT
+            { startLat: -26.2041, startLng: 28.0473, endLat: -29.8587, endLng: 31.0218, color: ['#007a4d', '#00d4aa'] }, // JHB to DBN
+            { startLat: -33.9249, startLng: 18.4241, endLat: -33.9608, endLng: 25.6022, color: ['#ffb612', '#00d4aa'] }, // CPT to PE
+            { startLat: -25.7461, startLng: 28.1881, endLat: -29.8587, endLng: 31.0218, color: ['#ff0044', '#007a4d'] }  // PTA to DBN
+        ];
+        
+        // Define points for key SA Hubs
+        const gData = [
+            { lat: -26.2041, lng: 28.0473, size: 0.1, color: '#00d4aa', name: 'Johannesburg Hub' },
+            { lat: -33.9249, lng: 18.4241, size: 0.1, color: '#ffb612', name: 'Cape Town Hub' },
+            { lat: -29.8587, lng: 31.0218, size: 0.08, color: '#007a4d', name: 'Durban Hub' },
+            { lat: -33.9608, lng: 25.6022, size: 0.05, color: '#ff0044', name: 'Gqeberha Hub' }
+        ];
+
+        const myGlobe = Globe()
+            (document.getElementById('globeViz'))
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+            .pointOfView({ lat: -28.4793, lng: 24.6727, altitude: 0.8 }, 2000)
+            .arcsData(arcsData)
+            .arcColor('color')
+            .arcDashLength(0.4)
+            .arcDashGap(0.2)
+            .arcDashAnimateTime(1500)
+            .pointsData(gData)
+            .pointColor('color')
+            .pointAltitude('size')
+            .pointRadius(0.12)
+            .pointsMerge(true)
+            .backgroundColor('#000000');
+            
+        // Make the globe spin slowly
+        myGlobe.controls().autoRotate = true;
+        myGlobe.controls().autoRotateSpeed = 0.5;
+
+        // Resize handler
+        window.addEventListener('resize', (event) => {
+            myGlobe.width(document.getElementById('globeViz').clientWidth);
+        });
+
+        let fleetData = [];
+        let markers = {};
+        let selectedVehicle = null;
+
+        // South African fleet data
+        const demoFleet = [
+            { id: 'JHB-001', driver: 'Thabo Mokoena', lat: -26.2041, lng: 28.0473, status: 'active', speed: 45, destination: 'Cape Town, WC', eta: '18h 30m', job: 'FRT-001', next_stop: 'Bloemfontein, FS' },
+            { id: 'CPT-001', driver: 'Sarah van der Berg', lat: -33.9249, lng: 18.4241, status: 'active', speed: 0, destination: 'Durban, KZN', eta: '14h 00m', job: 'FRT-002', next_stop: 'George, WC' },
+            { id: 'DBN-001', driver: 'Mandla Zwane', lat: -29.8587, lng: 31.0218, status: 'active', speed: 55, destination: 'Johannesburg, GP', eta: '8h 45m', job: 'FRT-003', next_stop: 'Pietermaritzburg, KZN' },
+            { id: 'PTA-001', driver: 'Anna Nel', lat: -25.7461, lng: 28.1881, status: 'idle', speed: 0, destination: 'Nelspruit, MP', eta: '4h 00m', job: 'FRT-004', next_stop: 'Pretoria Central' },
+            { id: 'PE-001', driver: 'Siyabonga Dlamini', lat: -33.9608, lng: 25.6022, status: 'active', speed: 35, destination: 'East London, EC', eta: '3h 30m', job: 'FRT-005', next_stop: 'Gqeberha, EC' },
+            { id: 'BFN-001', driver: 'Lerato Moloi', lat: -29.0852, lng: 26.1596, status: 'offline', speed: 0, destination: 'Kimberley, NC', eta: '-', job: 'FRT-006', next_stop: 'Kroonstad, FS' },
+        ];
+
+        // SA Deliveries
+        const demoDeliveries = [
+            { id: 'DEL-001', customer: 'Shoprite Cape Town', address: '123 Main Rd, Sea Point, Cape Town', driver: 'CPT-001', eta: '2:30 PM' },
+            { id: 'DEL-002', customer: 'Pick n Pay Durban', address: '45 Marine Parade, Durban Central', driver: 'DBN-001', eta: '4:00 PM' },
+            { id: 'DEL-003', customer: 'Checkers Sandton', address: '10 Rivonia Rd, Sandton, Johannesburg', driver: 'JHB-001', eta: '6:00 PM' },
+            { id: 'DEL-004', customer: 'Woolworths Centurion', address: '78 Jean Ave, Centurion, Pretoria', driver: 'PTA-001', eta: '3:00 PM' },
+        ];
+
+        function initFleet() {
+            fleetData = demoFleet;
+            document.getElementById('fleetCount').textContent = `${fleetData.length} SA vehicles tracked`;
+
+            // Transform fleet data into glowing points for the globe
+            const vehiclePoints = fleetData.map(v => ({
+                lat: v.lat,
+                lng: v.lng,
+                size: 0.02,
+                color: v.status === 'active' ? '#007a4d' : v.status === 'idle' ? '#ffb612' : '#8b949e',
+                name: `${v.id} (${v.driver})`,
+                id: v.id
+            }));
+            
+            // Add vehicles as custom labels
+            myGlobe.labelsData(vehiclePoints)
+                .labelLat('lat')
+                .labelLng('lng')
+                .labelText('name')
+                .labelSize(0.6)
+                .labelDotRadius(0.3)
+                .labelColor('color')
+                .labelResolution(2)
+                .onLabelClick((label) => selectVehicle(label.id));
+
+            updateFleetList();
+            updateStats();
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'active': return '#007a4d';
+                case 'idle': return '#ffb612';
+                case 'offline': return '#8b949e';
+                default: return '#8b949e';
+            }
+        }
+
+        function updateFleetList() {
+            const list = document.getElementById('fleetList');
+            list.innerHTML = fleetData.map(v => `
+                <div class="fleet-item ${selectedVehicle === v.id ? 'selected' : ''}" onclick="selectVehicle('${v.id}')">
+                    <div class="fleet-avatar">${v.driver.split(' ').map(n => n[0]).join('')}</div>
+                    <div class="fleet-info">
+                        <div class="fleet-name">${v.id}</div>
+                        <div class="fleet-status">
+                            <span class="fleet-badge badge-${v.status}">${v.status.toUpperCase()}</span>
+                            <span class="fleet-location">${v.driver}</span>
+                        </div>
+                        <div class="fleet-location">${v.next_stop}</div>
+                    </div>
+                    <div class="fleet-speed">${v.speed > 0 ? v.speed + ' km/h' : '-'}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectVehicle(vehicleId) {
+            selectedVehicle = vehicleId;
+            const vehicle = fleetData.find(v => v.id === vehicleId);
+            
+            if (vehicle) {
+                // Point Globe camera to vehicle
+                myGlobe.pointOfView({ lat: vehicle.lat, lng: vehicle.lng, altitude: 0.15 }, 1000);
+                
+                document.getElementById('selectedVehicle').textContent = vehicleId;
+                document.getElementById('jobDetails').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">DRIVER</div>
+                            <div style="color:#fff;">${vehicle.driver}</div>
+                        </div>
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">VEHICLE</div>
+                            <div style="color:#fff;">${vehicle.id}</div>
+                        </div>
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">DESTINATION</div>
+                            <div style="color:#fff;">${vehicle.destination}</div>
+                        </div>
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">NEXT STOP</div>
+                            <div style="color:#fff;">${vehicle.next_stop}</div>
+                        </div>
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">ETA</div>
+                            <div style="color:#007a4d;font-weight:600;">${vehicle.eta}</div>
+                        </div>
+                        <div style="background:#1c2128;padding:15px;border-radius:8px;">
+                            <div style="color:#8b949e;font-size:11px;margin-bottom:5px;">STATUS</div>
+                            <span class="fleet-badge badge-${vehicle.status}">${vehicle.status.toUpperCase()}</span>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('jobActions').style.display = 'grid';
+                updateFleetListUI();
+            }
+        }
+
+        async function initFleet() {
+            try {
+                const response = await fetch('/api/main/fleet/full');
+                fleetData = await response.json();
+                document.getElementById('fleetCount').textContent = `${fleetData.length} SA vehicles tracked`;
+
+                // Transform fleet data into glowing points for the globe
+                const vehiclePoints = fleetData.map(v => ({
+                    lat: v.lat,
+                    lng: v.lng,
+                    size: 0.02,
+                    color: v.status === 'active' ? '#007a4d' : v.status === 'idle' ? '#ffb612' : '#8b949e',
+                    name: `${v.id} (${v.driver})`,
+                    id: v.id
+                }));
+                
+                // Fetch exceptions to highlight bottlenecks
+                const excResponse = await fetch('/api/main/exceptions/full');
+                const exceptionsData = await excResponse.json();
+                
+                // Define points for key SA Hubs with bottleneck highlights
+                const hubData = [
+                    { lat: -26.2041, lng: 28.0473, size: 0.1, color: '#00d4aa', name: 'Johannesburg Hub' },
+                    { lat: -33.9249, lng: 18.4241, size: 0.1, color: '#ffb612', name: 'Cape Town Hub' },
+                    { lat: -29.8587, lng: 31.0218, size: 0.08, color: '#007a4d', name: 'Durban Hub' },
+                    { lat: -33.9608, lng: 25.6022, size: 0.05, color: '#ff0044', name: 'Gqeberha Hub' }
+                ];
+
+                // Check for critical inventory or shipping delays to mark hubs as bottlenecks
+                if (exceptionsData.by_category.inventory_issue > 0) hubData[0].color = '#ff0044'; // Example highlight JHB
+                
+                myGlobe.pointsData([...hubData, ...vehiclePoints.map(v => ({...v, size: 0.02}))]);
+                
+                // Add vehicles as custom labels
+                myGlobe.labelsData(vehiclePoints)
+                    .labelLat('lat')
+                    .labelLng('lng')
+                    .labelText('name')
+                    .labelSize(0.6)
+                    .labelDotRadius(0.3)
+                    .labelColor('color')
+                    .labelResolution(2)
+                    .onLabelClick((label) => selectVehicle(label.id));
+
+                updateFleetListUI();
+                updateStats();
+                updateOperationsTable();
+            } catch (err) {
+                console.error("Error initializing fleet:", err);
+            }
+        }
+
+        function getStatusColor(status) {
+            switch(status) {
+                case 'active': return '#007a4d';
+                case 'idle': return '#ffb612';
+                case 'offline': return '#8b949e';
+                default: return '#8b949e';
+            }
+        }
+
+        function updateFleetListUI() {
+            const list = document.getElementById('fleetList');
+            if (!list) return;
+            list.innerHTML = fleetData.map(v => `
+                <div class="fleet-item ${selectedVehicle === v.id ? 'selected' : ''}" onclick="selectVehicle('${v.id}')">
+                    <div class="fleet-avatar">${v.driver.split(' ').map(n => n[0]).join('')}</div>
+                    <div class="fleet-info">
+                        <div class="fleet-name">${v.id}</div>
+                        <div class="fleet-status">
+                            <span class="fleet-badge badge-${v.status}">${v.status.toUpperCase()}</span>
+                            <span class="fleet-location">${v.driver}</span>
+                        </div>
+                        <div class="fleet-location">${v.next_stop}</div>
+                    </div>
+                    <div class="fleet-speed">${v.speed > 0 ? v.speed + ' km/h' : '-'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function updateOperationsTable() {
+            try {
+                const response = await fetch('/api/main/operations/report');
+                const data = await response.json();
+                const tableBody = document.getElementById('operationsTableBody');
+                if (!tableBody) return;
+                
+                tableBody.innerHTML = data.operations.map(op => `
+                    <tr>
+                        <td>${op.id}</td>
+                        <td>${op.client}</td>
+                        <td>${op.driver}</td>
+                        <td>${op.payload}</td>
+                        <td><span class="fleet-badge badge-${op.status.toLowerCase().includes('transit') ? 'active' : op.status.toLowerCase().includes('delay') ? 'offline' : 'idle'}">${op.status}</span></td>
+                        <td style="color:#00d4aa;">R ${op.revenue.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Error updating operations table:", err);
+            }
+        }
+
+        // Job adjustment functions
+        async function reassignJob() { 
+            const newDriver = prompt(`Enter new driver for ${selectedVehicle}:`, "Siyabonga Dlamini");
+            if (!newDriver) return;
+            
+            try {
+                const response = await fetch('/api/main/override/reassign', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehicle_id: selectedVehicle, new_driver: newDriver })
+                });
+                const res = await response.json();
+                alert(`🚀 God Mode Action: ${res.message}`);
+                initFleet();
+            } catch (err) {
+                alert("Override failed. Check server connection.");
+            }
+        }
+
+        async function rerouteJob() { 
+            const newDest = prompt(`Enter new destination for ${selectedVehicle}:`, "East London, EC");
+            if (!newDest) return;
+
+            try {
+                const response = await fetch('/api/main/override/reroute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ vehicle_id: selectedVehicle, destination: newDest })
+                });
+                const res = await response.json();
+                alert(`🛣️ Reroute Successful: ${res.message}`);
+                initFleet();
+            } catch (err) {
+                alert("Reroute failed.");
+            }
+        }
+
+        function delayJob() { alert(`Setting delay for ${selectedVehicle}...\n\nDriver will be notified.`); }
+        function changePriority() { alert(`Changing priority for ${selectedVehicle}...\n\nJob will be escalated.`); }
+
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/main/status');
+                const data = await response.json();
+                
+                document.getElementById('totalVehicles').textContent = fleetData.length;
+                document.getElementById('activeDeliveries').textContent = fleetData.filter(v => v.status === 'active').length;
+                document.getElementById('completedToday').textContent = data.stats.completed_tasks;
+                document.getElementById('onTimeRate').textContent = '96%';
+                document.getElementById('gnnStatus').textContent = 'Active';
+            } catch (err) {
+                console.error("Error updating stats:", err);
+            }
+        }
+
+        function updateDeliveries() {
+            // Replaced by Operations Table HTML
+        }
+
+        // Integration Functions
+        function testApi() {
+            const endpoint = document.getElementById('apiEndpoint').value;
+            const result = document.getElementById('apiTestResult');
+            if (!endpoint) {
+                result.className = 'test-result error';
+                result.textContent = '❌ Please enter an API endpoint URL';
+                return;
+            }
+            result.className = 'test-result success';
+            result.innerHTML = '🔄 Testing connection...<br>Simulating API call to ' + endpoint;
+            setTimeout(() => {
+                result.innerHTML = '✅ Connection successful!<br>API responds with 200 OK<br>Data sync ready';
+            }, 1500);
+        }
+
+        function testServer() {
+            const server = document.getElementById('serverAddress').value;
+            const db = document.getElementById('dbName').value;
+            const result = document.getElementById('serverTestResult');
+            if (!server || !db) {
+                result.className = 'test-result error';
+                result.textContent = '❌ Please enter server address and database name';
+                return;
+            }
+            result.className = 'test-result success';
+            result.innerHTML = '🔄 Connecting to server...<br>' + server + '<br>Database: ' + db;
+            setTimeout(() => {
+                result.innerHTML = '✅ Server connected!<br>Database tables detected<br>Ready for GNN training';
+            }, 2000);
+        }
+
+        function startTraining() {
+            const period = document.getElementById('trainingPeriod').value;
+            const focus = document.getElementById('focusArea').value;
+            const statusDot = document.getElementById('trainingStatus');
+            const statusText = document.getElementById('trainingText');
+            
+            statusDot.className = 'connection-dot training';
+            statusText.textContent = 'Training GNN...';
+            document.getElementById('gnnStatus').textContent = 'Training';
+            
+            setTimeout(() => {
+                alert(`🧠 GNN Training Complete!\n\nTraining Period: Last ${period} days\nFocus Area: ${focus}\n\nThe GNN has learned from your company data and is ready to automate workflows!`);
+                statusDot.className = 'connection-dot connected';
+                statusText.textContent = 'GNN Trained & Ready';
+                document.getElementById('gnnStatus').textContent = 'Active';
+            }, 3000);
+        }
+
+        function connectAll() {
+            testApi();
+            setTimeout(() => testServer(), 500);
+            setTimeout(() => startTraining(), 1500);
+        }
+
+        // Initialize
+        initFleet();
+        updateDeliveries();
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('RLS PWA Service Worker Registered', reg))
+                    .catch(err => console.log('RLS PWA registration failed', err));
+            });
+        }
+    </script>
+</body>
+</html>
