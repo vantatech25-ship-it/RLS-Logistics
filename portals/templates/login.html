@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS GNN - Access Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #007a4d; /* SA Green */
+            --secondary: #ffb81c; /* SA Gold */
+            --accent: #e03c31; /* SA Red */
+            --bg: #0a0e17;
+            --card-bg: #161b22;
+            --text-main: #e6edf3;
+            --text-dim: #8b949e;
+            --border: #30363d;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .auth-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #007a4d, #ffb81c, #e03c31);
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 30px;
+            background: linear-gradient(to right, #fff, var(--text-dim));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo span { color: var(--primary); -webkit-text-fill-color: var(--primary); }
+
+        .auth-title {
+            font-size: 1.25rem;
+            margin-bottom: 30px;
+            color: var(--text-main);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 12px 12px 45px;
+            color: #fff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0,0,0,0.4);
+            box-shadow: 0 0 0 3px rgba(0, 122, 77, 0.2);
+        }
+
+        .login-btn {
+            width: 100%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background: #008f5a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 122, 77, 0.3);
+        }
+
+        .error-msg {
+            color: var(--accent);
+            font-size: 0.9rem;
+            background: rgba(224, 60, 49, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .demo-roles {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+
+        .demo-title {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .role-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 10px 5px;
+            border-radius: 6px;
+            color: var(--text-dim);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .role-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-color: var(--text-dim);
+        }
+
+        .role-btn i {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        /* Ambient Background */
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 122, 77, 0.1) 0%, rgba(10, 14, 23, 0) 70%);
+            top: -200px;
+            right: -200px;
+            z-index: 1;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(224, 60, 49, 0.05) 0%, rgba(10, 14, 23, 0) 70%);
+            bottom: -100px;
+            left: -100px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="logo">RLS <span>GNN</span></div>
+            <div class="auth-title">Logistics Command Center</div>
+
+            {% if error %}
+            <div class="error-msg">
+                <i class="fas fa-exclamation-circle"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" id="username" required placeholder="User ID">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" id="password" required placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">Secure Login</button>
+            </form>
+
+            {% if not production_mode %}
+            <div class="demo-roles">
+                <div class="demo-title">Role Preview (Demo Access)</div>
+                <div class="role-grid">
+                    <button class="role-btn" onclick="quickLogin('owner', 'rls_admin_password')">
+                        <i class="fas fa-crown"></i>
+                        Owner
+                    </button>
+                    <button class="role-btn" onclick="quickLogin('handler', 'rls_handler_password')">
+                        <i class="fas fa-warehouse"></i>
+                        Handler
+                    </button>
+                    <button class="role-btn" onclick="quickLogin('driver', 'rls_driver_password')">
+                        <i class="fas fa-truck"></i>
+                        Driver
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function quickLogin(u, p) {
+            document.getElementById('username').value = u;
+            document.getElementById('password').value = p;
+            document.querySelector('.login-btn').click();
+        }
+    </script>
+</body>
+</html>
