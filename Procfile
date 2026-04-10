@@ -1,1 +1,1 @@
-web: gunicorn portals.server:app
+web: python -m gunicorn portals.server:app
