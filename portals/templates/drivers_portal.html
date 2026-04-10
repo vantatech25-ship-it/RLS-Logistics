@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS GNN - Drivers Portal</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#007a4d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/static/icon-512x512.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0a0e17; color: #e7e9ea; min-height: 100vh; }
+        
+        .header { background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%); padding: 0; border-bottom: 3px solid #ffb612; position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; }
+        .logo { display: flex; align-items: center; gap: 15px; padding: 15px 0; }
+        .logo-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #007a4d 0%, #ffb612 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #000; }
+        .logo-text h1 { font-size: 22px; color: #fff; }
+        .logo-text span { font-size: 11px; color: #ffb612; }
+        .nav-links { display: flex; gap: 5px; }
+        .nav-link { padding: 12px 20px; color: #8b949e; text-decoration: none; border-radius: 8px; transition: all 0.3s; font-weight: 500; }
+        .nav-link:hover { background: #21262d; color: #fff; }
+        .nav-link.active { background: #007a4d; color: #fff; }
+        .driver-info { display: flex; align-items: center; gap: 15px; }
+        .driver-avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #007a4d, #ffb612); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; }
+        .driver-name { color: #fff; font-weight: 500; }
+        .driver-status { color: #007a4d; font-size: 12px; }
+
+        .main { max-width: 1600px; margin: 0 auto; padding: 30px; }
+        .section-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: #007a4d; border-radius: 2px; }
+
+        /* Driver Hero */
+        .driver-hero { background: linear-gradient(135deg, #1a1f2e 0%, #1a2e1f 100%); border: 1px solid #007a4d; border-radius: 20px; padding: 30px; margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 30px; }
+        .hero-stat { text-align: center; }
+        .hero-stat-value { font-size: 42px; font-weight: 700; color: #007a4d; margin-bottom: 5px; }
+        .hero-stat-label { font-size: 13px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+        .hero-stat-sub { font-size: 12px; color: #ffb612; margin-top: 5px; }
+
+        /* Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+
+        /* Cards */
+        .card { background: #161b22; border: 1px solid #21262d; border-radius: 16px; padding: 25px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 16px; font-weight: 600; color: #fff; }
+
+        /* Job Card - Main Feature */
+        .job-card { background: linear-gradient(145deg, #1c2128 0%, #161b22 100%); border: 3px solid #007a4d; border-radius: 20px; padding: 30px; margin-bottom: 30px; position: relative; overflow: hidden; }
+        .job-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: linear-gradient(90deg, #007a4d, #ffb612, #007a4d); }
+        .job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+        .job-id { font-size: 28px; font-weight: 700; color: #fff; }
+        .job-badge { padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .badge-new { background: rgba(0, 122, 77, 0.3); color: #007a4d; }
+        .badge-accepted { background: rgba(33, 150, 243, 0.3); color: #2196f3; }
+        .badge-in-progress { background: rgba(255, 182, 18, 0.3); color: #ffb612; }
+        .badge-completed { background: rgba(139, 148, 158, 0.2); color: #8b949e; }
+
+        .job-details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .job-detail { background: #21262d; border-radius: 12px; padding: 20px; }
+        .job-detail-label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .job-detail-value { font-size: 16px; color: #fff; font-weight: 500; }
+        .job-detail-icon { font-size: 24px; margin-bottom: 10px; }
+
+        /* ACTION BUTTONS - MAIN FEATURE */
+        .main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .main-btn { padding: 25px; border-radius: 15px; font-size: 18px; font-weight: 700; cursor: pointer; border: none; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .main-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .btn-accept { background: linear-gradient(135deg, #007a4d 0%, #00a876 100%); color: #fff; }
+        .btn-accept:hover { box-shadow: 0 10px 30px rgba(0, 122, 77, 0.5); }
+        .btn-complete { background: linear-gradient(135deg, #007a4d 0%, #00c853 100%); color: #fff; }
+        .btn-complete:hover { box-shadow: 0 10px 30px rgba(0, 122, 77, 0.5); }
+        .btn-decline { background: rgba(244, 67, 54, 0.2); color: #f44336; border: 2px solid #f44336; }
+        .btn-decline:hover { background: #f44336; color: #fff; }
+
+        /* Navigation Buttons */
+        .nav-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .nav-btn { padding: 18px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .nav-btn:hover { transform: translateY(-2px); }
+        .btn-to-pickup { background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%); color: #fff; }
+        .btn-to-delivery { background: linear-gradient(135deg, #007a4d 0%, #005f3a 100%); color: #fff; }
+        .btn-to-base { background: linear-gradient(135deg, #ffb612 0%, #f59e0b 100%); color: #000; }
+        .btn-full-nav { background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); color: #fff; }
+
+        /* Mini Map */
+        #miniMap { height: 250px; width: 100%; border-radius: 12px; margin-top: 20px; border: 2px solid #007a4d; }
+
+        /* Stats Grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(145deg, #161b22 0%, #0d1117 100%); border: 1px solid #21262d; border-radius: 16px; padding: 24px; }
+        .stat-icon { width: 45px; height: 45px; border-radius: 12px; background: rgba(0, 122, 77, 0.2); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 15px; }
+        .stat-value { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .stat-label { font-size: 13px; color: #8b949e; }
+
+        /* Status Bar */
+        .status-bar { background: #1c2128; border-radius: 12px; padding: 20px; display: flex; justify-content: space-around; align-items: center; margin-bottom: 30px; }
+        .status-item { text-align: center; }
+        .status-value { font-size: 20px; font-weight: 700; color: #007a4d; }
+        .status-label { font-size: 11px; color: #8b949e; text-transform: uppercase; margin-top: 5px; }
+
+        /* Route List */
+        .route-item { background: #1c2128; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; gap: 20px; align-items: center; }
+        .route-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(0, 122, 77, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .route-info { flex: 1; }
+        .route-info h4 { color: #fff; font-size: 15px; margin-bottom: 5px; }
+        .route-info p { color: #8b949e; font-size: 13px; }
+
+        /* Checklist */
+        .checklist-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #21262d; cursor: pointer; }
+        .check-box { width: 24px; height: 24px; border: 2px solid #30363d; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+        .check-text { color: #fff; font-size: 14px; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #161b22; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; border: 2px solid #007a4d; }
+        .modal-icon { font-size: 64px; margin-bottom: 20px; }
+        .modal-title { font-size: 24px; color: #fff; margin-bottom: 15px; }
+        .modal-text { color: #8b949e; margin-bottom: 30px; }
+        .modal-actions { display: flex; gap: 15px; justify-content: center; }
+        .modal-btn { padding: 15px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; font-size: 14px; }
+        .modal-btn-confirm { background: #007a4d; color: #fff; }
+        .modal-btn-cancel { background: #21262d; color: #fff; }
+
+        @media (max-width: 1200px) {
+            .stats-grid, .grid-2 { grid-template-columns: 1fr; }
+            .driver-hero { grid-template-columns: 1fr; }
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">
+                <div class="logo-icon">🇿🇦</div>
+                <div class="logo-text">
+                    <h1>Drivers Portal</h1>
+                    <span>South African Logistics</span>
+                </div>
+            </div>
+            <nav class="nav-links">
+                <a href="/drivers" class="nav-link active">Drivers Portal</a>
+            </nav>
+            <div class="driver-info">
+                <div>
+                    <div class="driver-name">{{ user }}</div>
+                    <div class="driver-status">● On Duty - Logistics</div>
+                </div>
+                <div class="driver-avatar">
+                   <i class="fas fa-truck-steering"></i>
+                </div>
+                <a href="/logout" style="color:#8b949e; margin-left:20px; text-decoration:none; font-size:14px;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-value">3</div>
+                <div class="status-label">Today's Jobs</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value">1</div>
+                <div class="status-label">Completed</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value">2</div>
+                <div class="status-label">Pending</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value">3h 45m</div>
+                <div class="status-label">Time Left</div>
+            </div>
+            <div class="status-item">
+                <div class="status-value">185 km</div>
+                <div class="status-label">Distance Left</div>
+            </div>
+        </div>
+
+        <!-- Main Job Card -->
+        <div class="section-title">Current Job Assignment</div>
+        <div class="job-card">
+            <div class="job-header">
+                <div>
+                    <div class="job-id" id="jobId">FRT-JHB-002</div>
+                    <p style="color:#8b949e;font-size:13px;margin-top:5px;">Assigned: 15 minutes ago • Johannesburg Hub</p>
+                </div>
+                <span class="job-badge badge-new" id="jobStatus">NEW JOB</span>
+            </div>
+
+            <div class="job-details">
+                <div class="job-detail">
+                    <div class="job-detail-icon">📍</div>
+                    <div class="job-detail-label">Pickup Location</div>
+                    <div class="job-detail-value" id="pickupAddress">456 Industrial Rd, Gauteng, Johannesburg</div>
+                </div>
+                <div class="job-detail">
+                    <div class="job-detail-icon">🏁</div>
+                    <div class="job-detail-label">Delivery Location</div>
+                    <div class="job-detail-value" id="deliveryAddress">123 Main Street, Sandton, Johannesburg</div>
+                </div>
+                <div class="job-detail">
+                    <div class="job-detail-icon">📦</div>
+                    <div class="job-detail-label">Cargo</div>
+                    <div class="job-detail-value" id="cargoDetails">50 boxes • 2,500 kg • General Freight</div>
+                </div>
+                <div class="job-detail">
+                    <div class="job-detail-icon">⏱️</div>
+                    <div class="job-detail-label">Time Window</div>
+                    <div class="job-detail-value" id="timeWindow">2:00 PM - 5:00 PM</div>
+                </div>
+                <div class="job-detail">
+                    <div class="job-detail-icon">💰</div>
+                    <div class="job-detail-label">Payment</div>
+                    <div class="job-detail-value" style="color:#007a4d;" id="jobPay">R2,450.00</div>
+                </div>
+                <div class="job-detail">
+                    <div class="job-detail-icon">📏</div>
+                    <div class="job-detail-label">Distance</div>
+                    <div class="job-detail-value" id="jobDistance">35 km</div>
+                </div>
+            </div>
+
+            <!-- MAIN ACTION BUTTONS -->
+            <div class="main-actions" id="mainActions">
+                <button class="main-btn btn-accept" onclick="acceptJob()">
+                    ✓ ACCEPT JOB
+                </button>
+                <button class="main-btn btn-decline" onclick="declineJob()">
+                    ✕ DECLINE JOB
+                </button>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="section-title" style="font-size:16px;margin-top:20px;">🗺️ Navigation</div>
+            <div class="nav-actions">
+                <button class="nav-btn btn-to-pickup" onclick="getDirectionsToPickup()">
+                    📍 Directions to Pickup
+                </button>
+                <button class="nav-btn btn-to-delivery" onclick="getDirectionsToDelivery()">
+                    🏁 Directions to Delivery
+                </button>
+            </div>
+            <div class="nav-actions">
+                <button class="nav-btn btn-to-base" onclick="getDirectionsBase()">
+                    🏠 Return to Base (JHB Hub)
+                </button>
+                <button class="nav-btn btn-full-nav" onclick="openFullNavigation()">
+                    🗺️ Full Route Navigation
+                </button>
+            </div>
+
+            <div id="miniMap"></div>
+        </div>
+
+        <!-- Complete Button (shows after accepting) -->
+        <div id="completeSection" style="display:none;margin-bottom:30px;">
+            <button class="main-btn btn-complete" onclick="completeJob()" style="width:100%;padding:30px;font-size:22px;">
+                ✓ MARK JOB AS COMPLETED
+            </button>
+        </div>
+
+        <!-- Upcoming Jobs -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Today's Schedule - SA</h3>
+                </div>
+                <div class="route-item">
+                    <div class="route-icon">✓</div>
+                    <div class="route-info">
+                        <h4>FRT-JHB-001 - Midrand to Pretoria</h4>
+                        <p>Completed at 9:30 AM</p>
+                    </div>
+                    <span class="job-badge badge-completed">DONE</span>
+                </div>
+                <div class="route-item">
+                    <div class="route-icon">🚚</div>
+                    <div class="route-info">
+                        <h4>FRT-JHB-002 - Johannesburg to Sandton</h4>
+                        <p>Current assignment</p>
+                    </div>
+                    <span class="job-badge badge-in-progress">ACTIVE</span>
+                </div>
+                <div class="route-item">
+                    <div class="route-icon">📋</div>
+                    <div class="route-info">
+                        <h4>FRT-JHB-003 - Sandton to Rosebank</h4>
+                        <p>Scheduled for 5:00 PM</p>
+                    </div>
+                    <span class="job-badge badge-new">PENDING</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Trip Checklist</h3>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <div class="check-box" style="background:#007a4d;border-color:#007a4d;color:#fff;">✓</div>
+                    <span class="check-text" style="color:#8b949e;text-decoration:line-through;">Vehicle inspection done</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <div class="check-box" style="background:#007a4d;border-color:#007a4d;color:#fff;">✓</div>
+                    <span class="check-text" style="color:#8b949e;text-decoration:line-through;">Cargo secured</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <div class="check-box"></div>
+                    <span class="check-text">Break taken before trip</span>
+                </div>
+                <div class="checklist-item" onclick="toggleCheck(this)">
+                    <div class="check-box"></div>
+                    <span class="check-text">End-of-day report submitted</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">🛣️</div>
+                <div class="stat-value">847</div>
+                <div class="stat-label">Total Trips (SA)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-value">4.9</div>
+                <div class="stat-label">Rating</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value">98.5%</div>
+                <div class="stat-label">On-Time Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">R18,500</div>
+                <div class="stat-label">This Month</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-icon" id="modalIcon">✓</div>
+            <h2 class="modal-title" id="modalTitle">Confirm</h2>
+            <p class="modal-text" id="modalText">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn modal-btn-confirm" id="modalConfirm" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Current job - South African locations
+        let currentJob = {
+            id: 'FRT-JHB-002',
+            status: 'new',
+            pickup: { lat: -26.2041, lng: 28.0473, address: '456 Industrial Rd, Gauteng, Johannesburg' },
+            delivery: { lat: -26.0539, lng: 28.0122, address: '123 Main Street, Sandton, Johannesburg' },
+            cargo: '50 boxes • 2,500 kg • General Freight',
+            timeWindow: '2:00 PM - 5:00 PM',
+            pay: 2450,
+            distance: '35 km'
+        };
+
+        // Initialize mini map - South Africa
+        const miniMap = L.map('miniMap').setView([-26.1, 28.0], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(miniMap);
+
+        // Add markers
+        const pickupMarker = L.marker([currentJob.pickup.lat, currentJob.pickup.lng], {
+            icon: L.divIcon({
+                html: '<div style="background:#2196f3;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
+                className: '',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).addTo(miniMap).bindPopup('Pickup: ' + currentJob.pickup.address);
+
+        const deliveryMarker = L.marker([currentJob.delivery.lat, currentJob.delivery.lng], {
+            icon: L.divIcon({
+                html: '<div style="background:#007a4d;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>',
+                className: '',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).addTo(miniMap).bindPopup('Delivery: ' + currentJob.delivery.address);
+
+        // Draw route line
+        L.polyline([
+            [currentJob.pickup.lat, currentJob.pickup.lng],
+            [currentJob.delivery.lat, currentJob.delivery.lng]
+        ], { color: '#007a4d', weight: 4, dashArray: '10, 10' }).addTo(miniMap);
+
+        // Accept Job
+        async function acceptJob() {
+            showModal('✓', 'Accept Job?', 'Accept this delivery job. Handler will be notified.', async () => {
+                try {
+                    const updateData = { job_id: currentJob.id, status: 'accepted', vehicle_id: 'TRUCK-001' };
+                    
+                    // Offline handling
+                    if (!navigator.onLine) {
+                        await saveOfflineUpdate(updateData);
+                        currentJob.status = 'accepted';
+                        updateJobUI();
+                        alert('📡 Offline: Job update saved and will sync when reconnected.');
+                        return;
+                    }
+
+                    const response = await fetch('/api/drivers/job/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateData)
+                    });
+                    const res = await response.json();
+                    currentJob.status = 'accepted';
+                    updateJobUI();
+                    alert('✅ Job accepted! Good luck on the road!');
+                } catch (err) {
+                    alert("Sync failed.");
+                }
+            });
+        }
+
+        // Decline Job
+        function declineJob() {
+            showModal('✕', 'Decline Job?', 'Are you sure you want to decline? Handler will reassign.', () => {
+                alert('Job declined. Handler notified.');
+            });
+        }
+
+        // Complete Job
+        async function completeJob() {
+            showModal('✓', 'Complete Job?', 'Confirm successful delivery to customer.', async () => {
+                try {
+                    const updateData = { job_id: currentJob.id, status: 'completed', vehicle_id: 'TRUCK-001' };
+                    
+                    // Offline handling
+                    if (!navigator.onLine) {
+                        await saveOfflineUpdate(updateData);
+                        currentJob.status = 'completed';
+                        updateJobUI();
+                        alert('📡 Offline: Delivery completion saved and will sync when reconnected.');
+                        return;
+                    }
+
+                    const response = await fetch('/api/drivers/job/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateData)
+                    });
+                    const res = await response.json();
+                    currentJob.status = 'completed';
+                    updateJobUI();
+                    alert('✅ Job completed! Well done!');
+                } catch (err) {
+                    alert("Sync failed.");
+                }
+            });
+        }
+
+        // Update UI
+        function updateJobUI() {
+            const statusBadge = document.getElementById('jobStatus');
+            const mainActions = document.getElementById('mainActions');
+            const completeSection = document.getElementById('completeSection');
+
+            switch(currentJob.status) {
+                case 'new':
+                    statusBadge.textContent = 'NEW JOB';
+                    statusBadge.className = 'job-badge badge-new';
+                    mainActions.innerHTML = `
+                        <button class="main-btn btn-accept" onclick="acceptJob()">✓ ACCEPT JOB</button>
+                        <button class="main-btn btn-decline" onclick="declineJob()">✕ DECLINE JOB</button>
+                    `;
+                    completeSection.style.display = 'none';
+                    break;
+                case 'accepted':
+                    statusBadge.textContent = 'ACCEPTED';
+                    statusBadge.className = 'job-badge badge-accepted';
+                    mainActions.innerHTML = `
+                        <button class="main-btn btn-accept" onclick="startDelivery()">🚚 START DELIVERY</button>
+                    `;
+                    completeSection.style.display = 'none';
+                    break;
+                case 'in_progress':
+                    statusBadge.textContent = 'IN PROGRESS';
+                    statusBadge.className = 'job-badge badge-in-progress';
+                    mainActions.style.display = 'none';
+                    completeSection.style.display = 'block';
+                    break;
+                case 'completed':
+                    statusBadge.textContent = 'COMPLETED';
+                    statusBadge.className = 'job-badge badge-completed';
+                    mainActions.style.display = 'none';
+                    completeSection.style.display = 'none';
+                    break;
+            }
+        }
+
+        function startDelivery() {
+            currentJob.status = 'in_progress';
+            updateJobUI();
+            alert('🚚 Delivery started! Drive safe!');
+        }
+
+        // Navigation Functions
+        function openFullNavigation() {
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${currentJob.pickup.lat},${currentJob.pickup.lng}&destination=${currentJob.delivery.lat},${currentJob.delivery.lng}`;
+            window.open(url, '_blank');
+        }
+
+        function getDirectionsToPickup() {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${currentJob.pickup.lat},${currentJob.pickup.lng}`;
+            window.open(url, '_blank');
+        }
+
+        function getDirectionsToDelivery() {
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${currentJob.delivery.lat},${currentJob.delivery.lng}`;
+            window.open(url, '_blank');
+        }
+
+        function getDirectionsBase() {
+            // Johannesburg Hub
+            const baseLat = -26.2041;
+            const baseLng = 28.0473;
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${baseLat},${baseLng}`;
+            window.open(url, '_blank');
+        }
+
+        // Checklist toggle
+        function toggleCheck(element) {
+            const checkbox = element.querySelector('.check-box');
+            if (checkbox.style.background === 'rgb(0, 122, 77)') {
+                checkbox.style.background = '';
+                checkbox.style.borderColor = '#30363d';
+                checkbox.style.color = '';
+                checkbox.textContent = '';
+                element.querySelector('.check-text').style.color = '#fff';
+                element.querySelector('.check-text').style.textDecoration = 'none';
+            } else {
+                checkbox.style.background = '#007a4d';
+                checkbox.style.borderColor = '#007a4d';
+                checkbox.style.color = '#fff';
+                checkbox.textContent = '✓';
+                element.querySelector('.check-text').style.color = '#8b949e';
+                element.querySelector('.check-text').style.textDecoration = 'line-through';
+            }
+        }
+
+        // Modal
+        let pendingAction = null;
+        function showModal(icon, title, text, callback) {
+            document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalText').textContent = text;
+            pendingAction = callback;
+            document.getElementById('confirmModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+            pendingAction = null;
+        }
+
+        function confirmAction() {
+            if (pendingAction) pendingAction();
+            closeModal();
+        }
+
+        // PWA & Offline Support
+        async function saveOfflineUpdate(data) {
+            const db = await openDatabase();
+            const tx = db.transaction('pending-updates', 'readwrite');
+            await tx.objectStore('pending-updates').add({ data, timestamp: Date.now() });
+            
+            // Register sync if supported
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+                const reg = await navigator.serviceWorker.ready;
+                await reg.sync.register('sync-job-updates');
+            }
+        }
+
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('RLS_PWA_DB', 1);
+                request.onupgradeneeded = () => {
+                    if (!request.result.objectStoreNames.contains('pending-updates')) {
+                        request.result.createObjectStore('pending-updates', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // PWA Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => {
+                        console.log('RLS Drivers PWA Service Worker Registered');
+                        // Request notification permission
+                        if ('Notification' in window && Notification.permission === 'default') {
+                            Notification.requestPermission();
+                        }
+                    })
+                    .catch(err => console.log('RLS PWA registration failed', err));
+            });
+        }
+
+        // Init
+        updateJobUI();
+    </script>
+</body>
+</html>
