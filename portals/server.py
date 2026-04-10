@@ -6,8 +6,8 @@ Main, Drivers, and Handler Portals
 import sys
 import os
 
-# Add parent directory to path
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Add project root to path for module lookups
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath(__file__))))
 sys.path.insert(0, BASE_DIR)
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for, session
