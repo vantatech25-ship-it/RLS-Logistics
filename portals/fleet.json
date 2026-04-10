@@ -1,0 +1,8 @@
+{
+  "fleet": [
+    { "id": "TRUCK-001", "driver": "Thabo Mokoena", "lat": -26.2041, "lng": 28.0473, "status": "active", "speed": 45, "destination": "Cape Town, WC", "eta": "18h 30m", "job": "DEL-005", "next_stop": "Bloemfontein, FS" },
+    { "id": "TRUCK-002", "driver": "Sarah van der Berg", "lat": -33.9249, "lng": 18.4241, "status": "active", "speed": 0, "destination": "Durban, KZN", "eta": "14h 00m", "job": "DEL-006", "next_stop": "George, WC" },
+    { "id": "TRUCK-003", "driver": "Mandla Zwane", "lat": -29.8587, "lng": 31.0218, "status": "active", "speed": 55, "destination": "Johannesburg, GP", "eta": "8h 45m", "job": "DEL-007", "next_stop": "Pietermaritzburg, KZN" },
+    { "id": "TRUCK-004", "driver": "Anna Nel", "lat": -25.7461, "lng": 28.1881, "status": "idle", "speed": 0, "destination": "Nelspruit, MP", "eta": "4h 00m", "job": "DEL-008", "next_stop": "Pretoria Central" }
+  ]
+}
