@@ -1,0 +1,33 @@
+{
+  "name": "RLS GNN Super Dashboard",
+  "short_name": "RLS GNN",
+  "description": "South African Logistics AI & Global Neural Network",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#007a4d",
+  "icons": [
+    {
+      "src": "/static/icon-512x512.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Drivers Portal",
+      "url": "/drivers",
+      "icons": [{ "src": "/static/icon-512x512.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Handlers Portal",
+      "url": "/handlers",
+      "icons": [{ "src": "/static/icon-512x512.png", "sizes": "192x192" }]
+    }
+  ]
+}
