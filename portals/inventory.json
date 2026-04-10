@@ -1,0 +1,9 @@
+{
+  "inventory": [
+    { "sku": "SKU001", "name": "Industrial Bearings", "current": 150, "reorder_qty": 500, "reorder_point": 30, "category": "automotive" },
+    { "sku": "SKU002", "name": "Refrigerant Gas", "current": 80, "reorder_qty": 300, "reorder_point": 15, "category": "refrigeration" },
+    { "sku": "SKU003", "name": "Hydraulic Fluid", "current": 200, "reorder_qty": 400, "reorder_point": 25, "category": "automotive" },
+    { "sku": "SKU004", "name": "Brake Pads Set", "current": 120, "reorder_qty": 600, "reorder_point": 20, "category": "automotive" },
+    { "sku": "SKU005", "name": "Engine Oil 10W-40", "current": 95, "reorder_qty": 800, "reorder_point": 18, "category": "automotive" }
+  ]
+}
