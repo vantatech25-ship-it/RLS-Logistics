@@ -1,0 +1,92 @@
+{
+  "app_name": "RLS GNN System",
+  "version": "1.0.0",
+  "environment": "development",
+  "debug": true,
+  "modules": {
+    "route_optimizer": {
+      "enabled": true,
+      "max_cache_ttl_seconds": 300,
+      "default_cargo_types": ["standard", "express", "refrigerated", "hazmat"],
+      "traffic_weight": 0.25,
+      "weather_weight": 0.20,
+      "cost_weight": 0.30,
+      "carrier_rating_weight": 0.25
+    },
+    "inventory_manager": {
+      "enabled": true,
+      "forecast_horizon_days": 30,
+      "confidence_threshold": 0.80,
+      "critical_stockout_threshold_days": 3,
+      "low_stock_threshold_days": 7
+    },
+    "predictive_maintenance": {
+      "enabled": true,
+      "vibration_threshold_normal": 2.0,
+      "vibration_threshold_warning": 4.0,
+      "temperature_threshold_normal": 85.0,
+      "temperature_threshold_warning": 95.0,
+      "sensor_reading_interval_minutes": 15
+    },
+    "document_processor": {
+      "enabled": true,
+      "min_confidence_threshold": 0.75,
+      "require_human_review_below": 0.60,
+      "supported_languages": ["en", "es", "fr", "de", "zh"],
+      "auto_correction_enabled": true
+    },
+    "workflow_mapper": {
+      "enabled": true,
+      "automation_threshold": 60,
+      "high_volume_threshold": 100
+    },
+    "customer_onboarding": {
+      "enabled": true,
+      "auto_qualify_threshold": 70,
+      "max_leads_per_rep": 50,
+      "follow_up_interval_hours": 24,
+      "onboarding_duration_days": 14
+    },
+    "exception_handler": {
+      "enabled": true,
+      "auto_escalate_after_minutes": 30,
+      "max_auto_resolution_attempts": 3,
+      "anomaly_threshold_std_devs": 3.0
+    },
+    "data_processor": {
+      "enabled": true,
+      "max_null_percentage": 20.0,
+      "sample_size": 1000,
+      "auto_clean_enabled": true
+    },
+    "hitl": {
+      "enabled": true,
+      "default_deadline_hours": 24,
+      "urgent_deadline_hours": 4,
+      "high_priority_deadline_hours": 8,
+      "auto_expire_after_hours": 168
+    },
+    "compliance_manager": {
+      "enabled": true,
+      "retention_default_days": 2555,
+      "pii_retention_days": 365,
+      "financial_retention_days": 2555,
+      "require_consent_for_pii": true,
+      "gdpr_enabled": true,
+      "popia_enabled": true
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file": "logs/gnn_system.log",
+    "max_size_mb": 100,
+    "backup_count": 5
+  },
+  "security": {
+    "encryption_enabled": true,
+    "audit_logging": true,
+    "session_timeout_minutes": 60,
+    "max_login_attempts": 5
+  }
+}
