@@ -1,88 +1,66 @@
-# RLS Logistics — Living Neural Network
+# RLS GNN System
 
-> A full-stack intelligent logistics platform powered by GNN routing, vector memory, time-series telemetry, LangGraph orchestration, and a real-time 3D Digital Twin.
+RLS Global Neural Network (GNN) - Comprehensive AI System for Logistics and Business Automation
+
+## Features
+
+### 1. Core Knowledge Base - Strategic Logistics Skills
+- **Route & Rate Optimization**: AI-powered multimodal route planning with real-time traffic and weather analysis
+- **Predictive Inventory Management**: ML-based demand forecasting and automated replenishment
+- **Predictive Maintenance**: IoT sensor monitoring for fleet and equipment failure prevention
+- **Document Processing (OCR/NLP)**: Automated extraction from Bills of Lading, Invoices, Customs Declarations
+
+### 2. Universal Business Automation Skills
+- **Workflow Mapping**: Process visualization and automation opportunity identification
+- **Lead & Customer Onboarding**: Automated lead capture, routing, and onboarding sequences
+- **Intelligent Exception Handling**: AI-powered anomaly detection and automated escalation
+
+### 3. Technical & Operational Layer
+- **Data Literacy**: Data cleaning, preparation, and analysis
+- **Human-in-the-Loop (HITL)**: Checkpoints for human review on complex cases
+- **Security & Compliance**: GDPR, POPIA, SOC2 compliance management
+
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+## Usage
+
+```bash
+# Run demos
+python main.py demo
+
+# Check system status
+python main.py status
+
+# Get AI recommendations
+python main.py recommendations
+```
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    core-digital-twin (:8080)                    │
-│              Three.js 3D Globe  •  Route Dispatcher             │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ POST /route
-┌──────────────────────────▼──────────────────────────────────────┐
-│              routing-engine (:3000) — Rust + Axum               │
-│          Petgraph Dijkstra  •  GNN Congestion Scorer            │
-└────────────┬─────────────────────┬──────────────────┬─────────────┘
-             │ HTTP                │ HTTP             │ Hub features
-┌────────────▼──────────┐ ┌────────▼─────────┐ ┌──────▼───────────┐
-│ orchestration (Python)│ │ gnn-sidecar      │ │ memory-layer      │
-│ LangGraph StateGraph  │ │ PyTorch Geometric│ │ Pinecone/DB       │
-└────────────┬──────────┘ └──────────────────┘ └───────────────────┘
-             │
-┌────────────▼────────────┐
-│  dashboard (:8000/8080) │
-│  FastAPI + Chart.js     │
-│  KPI  •  Trend  •  Fleet│
-└─────────────────────────┘
+RLS SYSTEM/
+├── gnn_core/
+│   ├── knowledge_base/
+│   │   ├── logistics/          # Route optimizer, Inventory, Maintenance
+│   │   └── ocr_nlp/            # Document processing
+│   ├── automation/
+│   │   ├── routing/            # Workflow mapping
+│   │   ├── crm/               # Customer onboarding
+│   │   └── exception_handler/ # Intelligent exceptions
+│   └── operational/
+│       ├── data_literacy/      # Data processing
+│       ├── hitl/               # Human-in-the-loop
+│       └── security/          # Compliance
+├── gnn_orchestrator/           # Main orchestration layer
+├── api/                        # API endpoints
+├── config/                     # Configuration
+└── main.py                     # Entry point
 ```
 
-## Quick Start (Docker)
+## License
 
-```powershell
-# 1. Copy secrets file
-Copy-Item .env.example .env
-# Edit .env and add your PINECONE_API_KEY
-
-# 2. Launch all services
-docker compose up --build
-
-# 3. Open in browser
-#    Digital Twin:  http://localhost:8080
-#    KPI Dashboard: http://localhost:8000
-#    Routing API:   http://localhost:3000/health
-```
-
-## Services
-
-| Service         | Port | Tech                         |
-|-----------------|------|------------------------------|
-| routing-engine  | 3000 | Rust, Axum, petgraph         |
-| gnn-sidecar     | 8000 | Python, FastAPI, PyTorch Geom|
-| digital-twin    | 8080 | Three.js, Nginx              |
-| orchestration   | —    | Python, LangGraph            |
-| dashboard       | 8001 | FastAPI, Chart.js            |
-| timescaledb     | 5432 | PostgreSQL + TimescaleDB     |
-
-## GNN Training
-
-```powershell
-cd routing-engine
-pip install -r gnn_requirements.txt
-python gnn_model.py     # trains GraphSAGE, saves gnn_weights.pt
-python gnn_service.py   # starts FastAPI sidecar on :8000
-```
-
-## Cloud Deploy
-
-**Railway:**
-```bash
-railway up
-```
-
-**GCP Cloud Run:**
-```bash
-gcloud builds submit --config cloudbuild.yaml --substitutions=_PROJECT_ID=$(gcloud config get-value project)
-```
-
-## Routing API
-
-```bash
-# Get hub GNN scores
-curl http://localhost:3000/hubs
-
-# Dispatch a GNN-optimised route
-curl -X POST http://localhost:3000/route \
-  -H "Content-Type: application/json" \
-  -d '{"from_hub_id":"JHB","to_hub_id":"CPT"}'
-```
+MIT
