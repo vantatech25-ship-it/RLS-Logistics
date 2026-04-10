@@ -1,152 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RLS Logistics — Global Command Centre</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700&display=swap" rel="stylesheet" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    :root {
-      --bg: #04080f;--panel: #080e1c;--accent: #00c8ff;--border: rgba(0, 200, 255, 0.2);--text: #d8eeff;--muted: #4a6a8a;--green: #00ff9d;--orange: #ff8c00;
-      --font: 'Inter', sans-serif;
-    }
-
-    body { background: var(--bg); color: var(--text); font-family: var(--font); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-    /* Top Navigation Bar */
-    nav {
-      height: 64px; background: rgba(4, 8, 15, 0.95); border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
-      backdrop-filter: blur(20px); z-index: 1000;
-    }
-
-    .logo-container { display: flex; align-items: center; gap: 12px; }
-    .logo { font-family: 'Orbitron', sans-serif; font-size: 1rem; letter-spacing: 0.15em; color: var(--accent); text-shadow: 0 0 20px rgba(0, 200, 255, 0.6); }
-    .status-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; background: rgba(0, 255, 157, 0.1); color: #00ff9d; border: 1px solid rgba(0, 255, 157, 0.3); padding: 4px 10px; border-radius: 20px; }
-
-    .nav-links { display: flex; gap: 6px; }
-    .nav-btn {
-      background: transparent; border: 1px solid transparent; color: var(--muted);
-      padding: 8px 16px; border-radius: 8px; font-size: 0.72rem; font-weight: 600;
-      letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; transition: all 0.2s;
-    }
-    .nav-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
-    .nav-btn.active { color: var(--accent); background: rgba(0, 200, 255, 0.1); border-color: var(--accent); }
-
-    /* Main Content Area */
-    #master-content { flex: 1; width: 100%; position: relative; display: flex; }
-    #viewport-container { flex: 1; position: relative; }
-    iframe { width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0; display: none; }
-    iframe.active { display: block; }
-
-    /* Neural Thought Console (SIDEBAR) */
-    #thought-console {
-      width: 320px; border-left: 1px solid var(--border); background: var(--panel);
-      display: flex; flex-direction: column; padding: 18px; gap: 20px; transition: width 0.3s;
-    }
-    .console-header { display:flex; justify-content:space-between; align-items:center; }
-    .console-header h3 { font-family:'Orbitron'; font-size:0.6rem; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
-    #log-stream { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
-    #log-stream::-webkit-scrollbar { width: 3px; }
-    #log-stream::-webkit-scrollbar-thumb { background: var(--border); }
-
-    .thought-entry { border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px; font-size: 0.72rem; animation: slideIn 0.3s ease; }
-    .thought-entry .ts { color: var(--muted); font-size: 0.6rem; display: block; margin-bottom: 3px; }
-    .thought-entry .msg { line-height: 1.4; color: var(--text); }
-    .thought-entry.trigger .msg { color: var(--accent); font-weight: 600; }
-    .thought-entry.ai .msg { color: var(--orange); }
-    .thought-entry.success .msg { color: var(--green); }
-
-    @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
-  </style>
+    <title>RLS GNN System - Loading</title>
+    <style>
+        body { margin: 0; padding: 0; background: #0a0e17; color: #00d4aa; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column; }
+        h1 { font-size: 48px; margin-bottom: 20px; }
+        p { font-size: 18px; color: #71767b; }
+        a { color: #00d4aa; text-decoration: none; font-size: 24px; margin: 10px; padding: 15px 30px; border: 2px solid #00d4aa; border-radius: 10px; display: inline-block; }
+        a:hover { background: #00d4aa; color: #0a0e17; }
+        .error { color: #f44336; margin-top: 30px; padding: 20px; border: 1px solid #f44336; border-radius: 10px; display: none; }
+    </style>
 </head>
 <body>
-
-<nav>
-  <div class="logo-container">
-    <span class="logo">⬡ RLS COMMAND CENTRE</span>
-    <span class="status-badge">● NEURAL CORE ACTIVE</span>
-  </div>
-  <div class="nav-links">
-    <button class="nav-btn active" onclick="switchView('twin', this)">3D Digital Twin</button>
-    <button class="nav-btn" onclick="switchView('kpi', this)">KPI Dashboard</button>
-  </div>
-  <div style="font-size: 0.7rem; color: var(--muted); font-weight: 700; letter-spacing: 0.05em;">MASTERPIECE v1.3.1</div>
-</nav>
-
-<div id="master-content">
-  <div id="viewport-container">
-    <iframe src="http://localhost:8085" id="view-twin" class="active"></iframe>
-    <iframe src="http://localhost:8086/dashboard.html" id="view-kpi"></iframe>
-  </div>
-
-  <div id="thought-console">
-    <div class="console-header">
-      <h3>Neural Thought Process</h3>
-      <div id="heartbeat" style="width: 6px; height: 6px; background: var(--accent); border-radius: 50%; box-shadow: 0 0 10px var(--accent); transition: opacity 0.4s;"></div>
+    <h1>RLS GNN System</h1>
+    <p>Select a portal to access:</p>
+    <div>
+        <a href="http://127.0.0.1:5000/" target="_blank">Main Dashboard</a>
+        <a href="http://127.0.0.1:5000/drivers" target="_blank">Drivers Portal</a>
+        <a href="http://127.0.0.1:5000/handlers" target="_blank">Handlers Portal</a>
     </div>
-    <div id="log-stream"></div>
-  </div>
-</div>
-
-<script>
-  function switchView(viewId, btn) {
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('iframe').forEach(f => f.classList.remove('active'));
-    document.getElementById('view-' + viewId).classList.add('active');
-    localStorage.setItem('rls_view', viewId);
-  }
-
-  // Restore view
-  const savedView = localStorage.getItem('rls_view') || 'twin';
-  const targetBtn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.textContent.toLowerCase().includes(savedView));
-  if (targetBtn) switchView(savedView, targetBtn);
-
-  async function pollThoughts() {
-    try {
-      const resp = await fetch('http://localhost:8000/api/thoughts');
-      const thoughts = await resp.json();
-      const stream = document.getElementById('log-stream');
-      
-      if (thoughts.length > 0) {
-        document.getElementById('heartbeat').style.opacity = '1';
-        setTimeout(() => document.getElementById('heartbeat').style.opacity = '0.3', 500);
-      }
-      
-      // Determine new thoughts only
-      const currentIds = new Set([...stream.children].map(c => c.getAttribute('data-ts')));
-      thoughts.slice(-15).forEach(t => {
-        if (!currentIds.has(t.timestamp)) {
-          const div = document.createElement('div');
-          div.className = `thought-entry ${t.type}`;
-          div.setAttribute('data-ts', t.timestamp);
-          div.innerHTML = `<span class="ts">${new Date(t.timestamp).toLocaleTimeString('en-ZA', {hour12:false})}</span><span class="msg">${t.message}</span>`;
-          stream.prepend(div);
-        }
-      });
-    } catch(e) {}
-  }
-
-  setInterval(pollThoughts, 1500);
-
-  // Relay dispatch events from sub-iframes to the neural backend
-  window.addEventListener('message', async (e) => {
-    if (e.data.type === 'dispatch_triggered') {
-      console.log("[Neural Bridge] Relay dispatch:", e.data);
-      try {
-        await fetch(`http://localhost:8000/api/dispatch?from_hub_id=${e.data.from}&to_hub_id=${e.data.to}`, {
-          method: 'POST'
-        });
-      } catch (err) {
-        console.error("Neural Relay Error:", err);
-      }
-    }
-  });
-</script>
-
+    <div class="error" id="errorMsg">
+        <p>If portals don't open, try these steps:</p>
+        <ol style="text-align:left;">
+            <li>Make sure the server is running: <code>python portals/server.py</code></li>
+            <li>Check if port 5000 is blocked by firewall</li>
+            <li>Try opening http://localhost:5000/ directly in your browser</li>
+        </ol>
+    </div>
+    <script>
+        setTimeout(() => {
+            fetch('http://127.0.0.1:5000/api/status')
+                .then(r => r.ok ? location.href = 'http://127.0.0.1:5000/' : null)
+                .catch(() => document.getElementById('errorMsg').style.display = 'block');
+        }, 1000);
+    </script>
 </body>
 </html>
