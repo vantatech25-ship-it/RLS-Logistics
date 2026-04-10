@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "username": "owner",
+      "password": "rls_admin_password",
+      "role": "owner",
+      "name": "Ivan (System Owner)"
+    },
+    {
+      "username": "handler",
+      "password": "rls_handler_password",
+      "role": "handler",
+      "name": "Fleet Handler"
+    },
+    {
+      "username": "driver",
+      "password": "rls_driver_password",
+      "role": "driver",
+      "name": "Logistics Driver"
+    }
+  ]
+}
