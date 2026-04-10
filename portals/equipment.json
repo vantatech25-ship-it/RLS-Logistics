@@ -1,0 +1,15 @@
+{
+  "equipment": [
+    { "id": "WH-JHB-001", "name": "Johannesburg Main Hub", "type": "WAREHOUSE_SENSOR" },
+    { "id": "WH-CPT-001", "name": "Cape Town Western Hub", "type": "WAREHOUSE_SENSOR" },
+    { "id": "WH-DBN-001", "name": "Durban Coastal Hub", "type": "WAREHOUSE_SENSOR" },
+    { "id": "TRUCK-001", "name": "Freightliner Cascadia - JHB", "type": "TRUCK" },
+    { "id": "TRUCK-002", "name": "Volvo FH16 - CPT", "type": "TRUCK" },
+    { "id": "TRUCK-003", "name": "Kenworth T680 - DBN", "type": "TRUCK" },
+    { "id": "TRUCK-004", "name": "Scania R500 - PTA", "type": "TRUCK" },
+    { "id": "FORKLIFT-001", "name": "Toyota Forklift #1", "type": "FORKLIFT" },
+    { "id": "FORKLIFT-002", "name": "Hyster Forklift #2", "type": "FORKLIFT" },
+    { "id": "CONV-001", "name": "Main Warehouse Conveyor", "type": "CONVEYOR" },
+    { "id": "REFG-001", "name": "Cold Storage Unit A", "type": "REFRIGERATED_UNIT" }
+  ]
+}
