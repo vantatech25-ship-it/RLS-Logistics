@@ -3,7 +3,7 @@ services:
     name: rls-gnn-dashboard
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn portals.server:app
+    startCommand: python -m gunicorn portals.server:app
     envVars:
       - key: PRODUCTION_MODE
         value: "true"
