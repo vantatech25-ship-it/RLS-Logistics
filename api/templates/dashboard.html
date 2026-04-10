@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS GNN System Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f1419; color: #e7e9ea; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #1a1f29 0%, #2d3748 100%); padding: 20px 40px; border-bottom: 1px solid #38444d; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 15px; }
+        .logo-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
+        .logo-text h1 { font-size: 24px; color: #fff; }
+        .logo-text span { font-size: 12px; color: #71767b; }
+        .status-badge { background: #00d4aa; color: #000; padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .main { padding: 30px 40px; max-width: 1600px; margin: 0 auto; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #1e2530; border-radius: 16px; padding: 25px; border: 1px solid #2f3842; transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 10px 40px rgba(0, 212, 170, 0.15); border-color: #00d4aa; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 15px; }
+        .icon-green { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+        .icon-blue { background: rgba(0, 168, 204, 0.2); color: #00a8cc; }
+        .icon-purple { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
+        .icon-orange { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+        .stat-value { font-size: 32px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+        .stat-label { font-size: 14px; color: #71767b; }
+        .section { background: #1e2530; border-radius: 16px; padding: 25px; border: 1px solid #2f3842; margin-bottom: 30px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .section-title { font-size: 20px; font-weight: 600; color: #fff; }
+        .tabs { display: flex; gap: 10px; }
+        .tab { padding: 8px 16px; background: transparent; border: 1px solid #2f3842; border-radius: 8px; color: #71767b; cursor: pointer; transition: all 0.3s; }
+        .tab:hover, .tab.active { background: #00d4aa; color: #000; border-color: #00d4aa; }
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .module-card { background: #252d3a; border-radius: 12px; padding: 20px; border: 1px solid #2f3842; }
+        .module-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .module-name { font-size: 16px; font-weight: 600; color: #fff; }
+        .module-status { width: 10px; height: 10px; border-radius: 50%; background: #00d4aa; box-shadow: 0 0 10px #00d4aa; }
+        .module-desc { font-size: 13px; color: #71767b; line-height: 1.5; }
+        .module-metrics { display: flex; gap: 20px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #2f3842; }
+        .metric { text-align: center; }
+        .metric-value { font-size: 18px; font-weight: 600; color: #00d4aa; }
+        .metric-label { font-size: 11px; color: #71767b; margin-top: 3px; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 13px; color: #71767b; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px 15px; background: #252d3a; border: 1px solid #2f3842; border-radius: 8px; color: #fff; font-size: 14px; }
+        .form-input:focus { outline: none; border-color: #00d4aa; }
+        .btn { padding: 12px 24px; background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%); border: none; border-radius: 8px; color: #000; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0, 212, 170, 0.4); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .result-box { background: #252d3a; border-radius: 8px; padding: 20px; margin-top: 20px; display: none; }
+        .result-box.show { display: block; }
+        .result-title { font-size: 14px; color: #00d4aa; margin-bottom: 10px; }
+        .result-content { font-size: 13px; color: #e7e9ea; white-space: pre-wrap; font-family: monospace; max-height: 300px; overflow-y: auto; }
+        .rec-card { background: #252d3a; border-radius: 10px; padding: 15px; margin-bottom: 10px; border-left: 4px solid #00d4aa; }
+        .rec-priority { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+        .priority-high { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+        .priority-medium { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+        .priority-low { background: rgba(0, 212, 170, 0.2); color: #00d4aa; }
+        .rec-message { font-size: 14px; color: #fff; margin-bottom: 5px; }
+        .rec-action { font-size: 12px; color: #71767b; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+        .refresh-btn { background: transparent; border: 1px solid #2f3842; color: #71767b; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-left: 10px; }
+        .refresh-btn:hover { border-color: #00d4aa; color: #00d4aa; }
+        
+        /* Login Overlay Styles */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 20, 25, 0.95); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(10px); transition: opacity 0.5s; }
+        .login-box { background: #1e2530; padding: 40px; border-radius: 16px; border: 1px solid #2f3842; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0, 212, 170, 0.2); }
+        .login-box h2 { color: #fff; margin-bottom: 20px; }
+        .login-input { width: 100%; padding: 12px 15px; margin-bottom: 15px; background: #252d3a; border: 1px solid #2f3842; border-radius: 8px; color: #fff; font-size: 15px; }
+        .login-input:focus { outline: none; border-color: #00d4aa; }
+        .login-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #00d4aa 0%, #00a8cc 100%); border: none; border-radius: 8px; color: #000; font-weight: bold; cursor: pointer; font-size: 16px; transition: transform 0.2s; }
+        .login-btn:hover { transform: scale(1.02); }
+        
+        /* Map Styles */
+        #map { width: 100%; height: 450px; border-radius: 16px; margin-bottom: 30px; border: 1px solid #2f3842; z-index: 1; }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-box">
+            <div class="logo-icon" style="margin: 0 auto 15px; font-size: 24px; width: 60px; height: 60px;">AI</div>
+            <h2 id="loginTitle">RLS Dashboard Login</h2>
+            <input type="text" class="login-input" placeholder="System ID" value="ADMIN-ZA-001">
+            <input type="password" class="login-input" placeholder="Password" value="••••••••">
+            <button class="login-btn" onclick="document.getElementById('loginOverlay').style.opacity='0'; setTimeout(() => document.getElementById('loginOverlay').style.display='none', 500); setTimeout(() => initMap(), 500);">SECURE ACCESS</button>
+        </div>
+    </div>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">AI</div>
+            <div class="logo-text">
+                <h1>RLS GNN System</h1>
+                <span>Global Neural Network for Logistics & Business Automation</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span class="status-badge">SYSTEM ONLINE</span>
+            <button class="refresh-btn" onclick="loadDashboard()">Refresh</button>
+            <button class="refresh-btn" style="border-color:#f44336; color:#f44336;" onclick="document.getElementById('loginOverlay').style.display='flex'; setTimeout(()=>document.getElementById('loginOverlay').style.opacity='1', 10);">Log Out</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-icon icon-green">10</div>
+                <div class="stat-value" id="modulesActive">-</div>
+                <div class="stat-label">Modules Active</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-blue">0</div>
+                <div class="stat-value" id="tasksCompleted">-</div>
+                <div class="stat-label">Tasks Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-purple">0</div>
+                <div class="stat-value" id="openExceptions">-</div>
+                <div class="stat-label">Open Exceptions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon icon-orange">0</div>
+                <div class="stat-value" id="pendingReviews">-</div>
+                <div class="stat-label">Pending Reviews</div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2 class="section-title">Live Tracking & Routes (South Africa)</h2>
+        </div>
+        <div id="map"></div>
+
+        <div class="two-col">
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">AI Recommendations</h2>
+                </div>
+                <div id="recommendations">
+                    <p style="color: #71767b;">Loading recommendations...</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Quick Actions</h2>
+                </div>
+                <div class="module-grid">
+                    <div class="module-card" onclick="showTab('route')">
+                        <div class="module-header">
+                            <div>
+                                <div class="module-name">Route Optimization</div>
+                                <div class="module-desc">Find optimal routes with AI</div>
+                            </div>
+                            <div class="module-status"></div>
+                        </div>
+                    </div>
+                    <div class="module-card" onclick="showTab('inventory')">
+                        <div class="module-header">
+                            <div>
+                                <div class="module-name">Inventory Check</div>
+                                <div class="module-desc">Predictive inventory analysis</div>
+                            </div>
+                            <div class="module-status"></div>
+                        </div>
+                    </div>
+                    <div class="module-card" onclick="showTab('document')">
+                        <div class="module-header">
+                            <div>
+                                <div class="module-name">Document Processing</div>
+                                <div class="module-desc">OCR & NLP extraction</div>
+                            </div>
+                            <div class="module-status"></div>
+                        </div>
+                    </div>
+                    <div class="module-card" onclick="showTab('lead')">
+                        <div class="module-header">
+                            <div>
+                                <div class="module-name">Lead Capture</div>
+                                <div class="module-desc">Customer onboarding</div>
+                            </div>
+                            <div class="module-status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">Interactive Console</h2>
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('route')">Route</button>
+                    <button class="tab" onclick="showTab('inventory')">Inventory</button>
+                    <button class="tab" onclick="showTab('document')">Document</button>
+                    <button class="tab" onclick="showTab('lead')">Lead</button>
+                    <button class="tab" onclick="showTab('compliance')">Compliance</button>
+                </div>
+            </div>
+
+            <div id="tabRoute" class="tab-content">
+                <div class="two-col">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Origin City</label>
+                            <input type="text" class="form-input" id="routeOrigin" value="Johannesburg, ZA">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Destination City</label>
+                            <input type="text" class="form-input" id="routeDest" value="Cape Town, ZA">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cargo Type</label>
+                            <select class="form-input" id="routeCargo">
+                                <option value="standard">Standard</option>
+                                <option value="express">Express</option>
+                                <option value="refrigerated">Refrigerated</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="optimizeRoute()">Optimize Route</button>
+                    </div>
+                    <div>
+                        <div id="routeResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabInventory" class="tab-content" style="display:none;">
+                <div class="two-col">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Product SKU</label>
+                            <input type="text" class="form-input" id="invSku" value="SKU001">
+                        </div>
+                        <button class="btn" onclick="checkInventory()">Check Inventory</button>
+                    </div>
+                    <div>
+                        <div id="invResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabDocument" class="tab-content" style="display:none;">
+                <div class="two-col">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Document Text</label>
+                            <textarea class="form-input" id="docText" rows="6" style="resize:vertical;">INVOICE #INV-2024-001234
+FROM: ABC Suppliers Pty Ltd.
+TO: XYZ Corporation
+Date: 01/15/2024
+TOTAL AMOUNT DUE: ZAR 15,750.00
+Payment Terms: Net 30</textarea>
+                        </div>
+                        <button class="btn" onclick="processDocument()">Process Document</button>
+                    </div>
+                    <div>
+                        <div id="docResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabLead" class="tab-content" style="display:none;">
+                <div class="two-col">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Company Name</label>
+                            <input type="text" class="form-input" id="leadCompany" value="Acme Corporation">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Contact Name</label>
+                            <input type="text" class="form-input" id="leadContact" value="Sipho Khumalo">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" id="leadEmail" value="sipho@acme.co.za">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Source</label>
+                            <select class="form-input" id="leadSource">
+                                <option value="website">Website</option>
+                                <option value="referral">Referral</option>
+                                <option value="trade_show">Trade Show</option>
+                            </select>
+                        </div>
+                        <button class="btn" onclick="captureLead()">Capture Lead</button>
+                    </div>
+                    <div>
+                        <div id="leadResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabCompliance" class="tab-content" style="display:none;">
+                <div class="two-col">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label">Framework</label>
+                            <select class="form-input" id="compFramework">
+                                <option value="gdpr">GDPR</option>
+                                <option value="popia">POPIA</option>
+                                <option value="soc2">SOC2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Processing Description</label>
+                            <input type="text" class="form-input" id="compDesc" value="Customer data analytics">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Users Affected</label>
+                            <input type="number" class="form-input" id="compUsers" value="50000">
+                        </div>
+                        <button class="btn" onclick="checkCompliance()">Run Compliance Check</button>
+                    </div>
+                    <div>
+                        <div id="compResult" class="result-box"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                const modules = data.modules;
+                const activeModules = Object.values(modules).filter(v => v === 'active').length;
+                document.getElementById('modulesActive').textContent = activeModules;
+                document.getElementById('tasksCompleted').textContent = data.stats.completed_tasks;
+                document.getElementById('openExceptions').textContent = data.exceptions.open_exceptions;
+                document.getElementById('pendingReviews').textContent = data.hitl.pending;
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        async function loadRecommendations() {
+            try {
+                const response = await fetch('/api/recommendations');
+                const recs = await response.json();
+                const container = document.getElementById('recommendations');
+                
+                if (recs.length === 0) {
+                    container.innerHTML = '<p style="color: #71767b;">No recommendations at this time</p>';
+                    return;
+                }
+                
+                container.innerHTML = recs.map(rec => `
+                    <div class="rec-card">
+                        <span class="rec-priority priority-${rec.priority}">${rec.priority.toUpperCase()}</span>
+                        <div class="rec-message">${rec.message}</div>
+                        <div class="rec-action">Action: ${rec.action}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1)).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        async function optimizeRoute() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Optimizing...';
+            
+            try {
+                const response = await fetch('/api/route/optimize', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        origin: { lat: -26.2041, lng: 28.0473, address: document.getElementById('routeOrigin').value },
+                        destination: { lat: -33.9249, lng: 18.4241, address: document.getElementById('routeDest').value },
+                        cargo_type: document.getElementById('routeCargo').value
+                    })
+                });
+                const data = await response.json();
+                const resultBox = document.getElementById('routeResult');
+                resultBox.classList.add('show');
+                resultBox.innerHTML = `
+                    <div class="result-title">Route Optimization Results</div>
+                    <div class="result-content">${JSON.stringify(data.optimal_route, null, 2)}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Optimize Route';
+        }
+
+        async function checkInventory() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            
+            try {
+                const response = await fetch('/api/inventory/check', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ sku: document.getElementById('invSku').value })
+                });
+                const data = await response.json();
+                const resultBox = document.getElementById('invResult');
+                resultBox.classList.add('show');
+                resultBox.innerHTML = `
+                    <div class="result-title">Inventory Analysis</div>
+                    <div class="result-content">${JSON.stringify(data, null, 2)}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Check Inventory';
+        }
+
+        async function processDocument() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch('/api/document/process', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ text: document.getElementById('docText').value })
+                });
+                const data = await response.json();
+                const resultBox = document.getElementById('docResult');
+                resultBox.classList.add('show');
+                resultBox.innerHTML = `
+                    <div class="result-title">Document Processing Results</div>
+                    <div class="result-content">${JSON.stringify(data, null, 2)}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Process Document';
+        }
+
+        async function captureLead() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Capturing...';
+            
+            try {
+                const response = await fetch('/api/lead/capture', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        company: document.getElementById('leadCompany').value,
+                        contact: document.getElementById('leadContact').value,
+                        email: document.getElementById('leadEmail').value,
+                        phone: '+27-82-555-0100',
+                        source: document.getElementById('leadSource').value,
+                        requirements: ['freight_services']
+                    })
+                });
+                const data = await response.json();
+                const resultBox = document.getElementById('leadResult');
+                resultBox.classList.add('show');
+                resultBox.innerHTML = `
+                    <div class="result-title">Lead Captured Successfully</div>
+                    <div class="result-content">${JSON.stringify(data, null, 2)}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Capture Lead';
+        }
+
+        async function checkCompliance() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+            
+            try {
+                const response = await fetch('/api/compliance/check', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        framework: document.getElementById('compFramework').value,
+                        processing_description: document.getElementById('compDesc').value,
+                        data_categories: ['pii', 'financial'],
+                        users_affected: parseInt(document.getElementById('compUsers').value)
+                    })
+                });
+                const data = await response.json();
+                const resultBox = document.getElementById('compResult');
+                resultBox.classList.add('show');
+                resultBox.innerHTML = `
+                    <div class="result-title">Compliance Assessment</div>
+                    <div class="result-content">${JSON.stringify(data.privacy_impact_assessment, null, 2)}</div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Run Compliance Check';
+        }
+
+        let map;
+        function initMap() {
+            if (map) return;
+            // Dark map theme (CartoDB Dark Matter)
+            map = L.map('map').setView([-28.4793, 24.6727], 5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CartoDB',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add pins for ZA
+            const jhbIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+            const cptIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
+            });
+
+            const jhb = L.marker([-26.2041, 28.0473], {icon: jhbIcon}).addTo(map).bindPopup("<b>Johannesburg Node</b><br>Route Origin");
+            const cpt = L.marker([-33.9249, 18.4241], {icon: cptIcon}).addTo(map).bindPopup("<b>Cape Town Hub</b><br>Destination");
+            
+            // Draw driver route
+            const latlngs = [[-26.2041, 28.0473], [-29.0852, 26.1596], [-33.9249, 18.4241]]; 
+            const polyline = L.polyline(latlngs, {color: '#00d4aa', weight: 4, dashArray: '10, 10'}).addTo(map);
+            
+            // Adjust to fit points
+            map.fitBounds(polyline.getBounds(), {padding: [50, 50]});
+            const truckIcon = L.icon({iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41]});
+            const driver = L.marker([-29.0852, 26.1596], {icon: truckIcon}).addTo(map).bindPopup("<b>Truck ZA-042</b><br>Sipho Khumalo<br>Status: IN TRANSIT").openPopup();
+        }
+
+        // Initial load
+        loadDashboard();
+        loadRecommendations();
+    </script>
+</body>
+</html>
